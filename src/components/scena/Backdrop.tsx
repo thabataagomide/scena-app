@@ -24,11 +24,11 @@ export function Backdrop({
 
   const fadeLeft =
     intensity === "strong"
-      ? "linear-gradient(90deg, #0f0f0f 8%, rgba(15,15,15,0.85) 34%, rgba(15,15,15,0.35) 62%, rgba(15,15,15,0.15) 100%)"
-      : "linear-gradient(90deg, rgba(15,15,15,0.75) 0%, rgba(15,15,15,0.25) 60%, rgba(15,15,15,0.05) 100%)";
+      ? "linear-gradient(90deg, rgba(15,15,15,0.96) 0%, rgba(15,15,15,0.86) 34%, rgba(15,15,15,0.55) 62%, rgba(15,15,15,0.30) 100%)"
+      : "linear-gradient(90deg, rgba(15,15,15,0.78) 0%, rgba(15,15,15,0.32) 62%, rgba(15,15,15,0.10) 100%)";
 
   const fadeBottom =
-    "linear-gradient(180deg, rgba(9,9,9,0.15) 0%, rgba(9,9,9,0.55) 55%, #0f0f0f 100%)";
+    "linear-gradient(180deg, rgba(9,9,9,0.10) 0%, rgba(9,9,9,0.55) 55%, rgba(9,9,9,0.95) 100%)";
 
   const fade = side === "left" ? fadeLeft : fadeBottom;
 
