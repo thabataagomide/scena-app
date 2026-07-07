@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as BuscarRouteImport } from './routes/buscar'
+import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as AssistirRouteImport } from './routes/assistir'
 import { Route as IndexRouteImport } from './routes/index'
 
 const BuscarRoute = BuscarRouteImport.update({
   id: '/buscar',
   path: '/buscar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BibliotecaRoute = BibliotecaRouteImport.update({
+  id: '/biblioteca',
+  path: '/biblioteca',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AssistirRoute = AssistirRouteImport.update({
@@ -32,30 +38,34 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assistir': typeof AssistirRoute
+  '/biblioteca': typeof BibliotecaRoute
   '/buscar': typeof BuscarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assistir': typeof AssistirRoute
+  '/biblioteca': typeof BibliotecaRoute
   '/buscar': typeof BuscarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/assistir': typeof AssistirRoute
+  '/biblioteca': typeof BibliotecaRoute
   '/buscar': typeof BuscarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/assistir' | '/buscar'
+  fullPaths: '/' | '/assistir' | '/biblioteca' | '/buscar'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/assistir' | '/buscar'
-  id: '__root__' | '/' | '/assistir' | '/buscar'
+  to: '/' | '/assistir' | '/biblioteca' | '/buscar'
+  id: '__root__' | '/' | '/assistir' | '/biblioteca' | '/buscar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AssistirRoute: typeof AssistirRoute
+  BibliotecaRoute: typeof BibliotecaRoute
   BuscarRoute: typeof BuscarRoute
 }
 
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/buscar'
       fullPath: '/buscar'
       preLoaderRoute: typeof BuscarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/biblioteca': {
+      id: '/biblioteca'
+      path: '/biblioteca'
+      fullPath: '/biblioteca'
+      preLoaderRoute: typeof BibliotecaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/assistir': {
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssistirRoute: AssistirRoute,
+  BibliotecaRoute: BibliotecaRoute,
   BuscarRoute: BuscarRoute,
 }
 export const routeTree = rootRouteImport
