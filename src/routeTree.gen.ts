@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as AssistirRouteImport } from './routes/assistir'
 import { Route as IndexRouteImport } from './routes/index'
 
+const BuscarRoute = BuscarRouteImport.update({
+  id: '/buscar',
+  path: '/buscar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AssistirRoute = AssistirRouteImport.update({
   id: '/assistir',
   path: '/assistir',
@@ -26,31 +32,42 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assistir': typeof AssistirRoute
+  '/buscar': typeof BuscarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assistir': typeof AssistirRoute
+  '/buscar': typeof BuscarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/assistir': typeof AssistirRoute
+  '/buscar': typeof BuscarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/assistir'
+  fullPaths: '/' | '/assistir' | '/buscar'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/assistir'
-  id: '__root__' | '/' | '/assistir'
+  to: '/' | '/assistir' | '/buscar'
+  id: '__root__' | '/' | '/assistir' | '/buscar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AssistirRoute: typeof AssistirRoute
+  BuscarRoute: typeof BuscarRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/buscar': {
+      id: '/buscar'
+      path: '/buscar'
+      fullPath: '/buscar'
+      preLoaderRoute: typeof BuscarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/assistir': {
       id: '/assistir'
       path: '/assistir'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssistirRoute: AssistirRoute,
+  BuscarRoute: BuscarRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
