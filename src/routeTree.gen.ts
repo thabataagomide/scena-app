@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as AssistirRouteImport } from './routes/assistir'
 import { Route as IndexRouteImport } from './routes/index'
 
+const PerfilRoute = PerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BuscarRoute = BuscarRouteImport.update({
   id: '/buscar',
   path: '/buscar',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/assistir': typeof AssistirRoute
   '/biblioteca': typeof BibliotecaRoute
   '/buscar': typeof BuscarRoute
+  '/perfil': typeof PerfilRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assistir': typeof AssistirRoute
   '/biblioteca': typeof BibliotecaRoute
   '/buscar': typeof BuscarRoute
+  '/perfil': typeof PerfilRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/assistir': typeof AssistirRoute
   '/biblioteca': typeof BibliotecaRoute
   '/buscar': typeof BuscarRoute
+  '/perfil': typeof PerfilRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/assistir' | '/biblioteca' | '/buscar'
+  fullPaths: '/' | '/assistir' | '/biblioteca' | '/buscar' | '/perfil'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/assistir' | '/biblioteca' | '/buscar'
-  id: '__root__' | '/' | '/assistir' | '/biblioteca' | '/buscar'
+  to: '/' | '/assistir' | '/biblioteca' | '/buscar' | '/perfil'
+  id: '__root__' | '/' | '/assistir' | '/biblioteca' | '/buscar' | '/perfil'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,10 +76,18 @@ export interface RootRouteChildren {
   AssistirRoute: typeof AssistirRoute
   BibliotecaRoute: typeof BibliotecaRoute
   BuscarRoute: typeof BuscarRoute
+  PerfilRoute: typeof PerfilRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/perfil': {
+      id: '/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof PerfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/buscar': {
       id: '/buscar'
       path: '/buscar'
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssistirRoute: AssistirRoute,
   BibliotecaRoute: BibliotecaRoute,
   BuscarRoute: BuscarRoute,
+  PerfilRoute: PerfilRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
