@@ -94,8 +94,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Scena — Filmes e séries, do seu jeito" },
       { name: "twitter:description", content: "Scena é o seu diário cinematográfico. Acompanhe filmes e séries, organize sua biblioteca e descubra o que amigos estão assistindo." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/jEjOyFWPH2gtKbXmEIKEiEpzk8i1/social-images/social-1783460848305-Frame_2.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/jEjOyFWPH2gtKbXmEIKEiEpzk8i1/social-images/social-1783460848305-Frame_2.webp" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/jEjOyFWPH2gtKbXmEIKEiEpzk8i1/social-images/social-1783461418440-scena-logo.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/jEjOyFWPH2gtKbXmEIKEiEpzk8i1/social-images/social-1783461418440-scena-logo.webp" },
     ],
     links: [
       {
@@ -108,7 +108,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
   shellComponent: RootShell,
