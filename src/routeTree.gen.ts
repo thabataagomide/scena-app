@@ -15,6 +15,7 @@ import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as AssistirRouteImport } from './routes/assistir'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SeriesIdRouteImport } from './routes/series.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -46,6 +47,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SeriesIdRoute = SeriesIdRouteImport.update({
+  id: '/series/$id',
+  path: '/series/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/buscar': typeof BuscarRoute
   '/perfil': typeof PerfilRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/series/$id': typeof SeriesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/buscar': typeof BuscarRoute
   '/perfil': typeof PerfilRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/series/$id': typeof SeriesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,13 +79,27 @@ export interface FileRoutesById {
   '/buscar': typeof BuscarRoute
   '/perfil': typeof PerfilRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/series/$id': typeof SeriesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/assistir' | '/biblioteca' | '/buscar' | '/perfil' | '/sitemap.xml'
+    | '/'
+    | '/assistir'
+    | '/biblioteca'
+    | '/buscar'
+    | '/perfil'
+    | '/sitemap.xml'
+    | '/series/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/assistir' | '/biblioteca' | '/buscar' | '/perfil' | '/sitemap.xml'
+  to:
+    | '/'
+    | '/assistir'
+    | '/biblioteca'
+    | '/buscar'
+    | '/perfil'
+    | '/sitemap.xml'
+    | '/series/$id'
   id:
     | '__root__'
     | '/'
@@ -86,6 +108,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/perfil'
     | '/sitemap.xml'
+    | '/series/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -95,6 +118,7 @@ export interface RootRouteChildren {
   BuscarRoute: typeof BuscarRoute
   PerfilRoute: typeof PerfilRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SeriesIdRoute: typeof SeriesIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -141,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/series/$id': {
+      id: '/series/$id'
+      path: '/series/$id'
+      fullPath: '/series/$id'
+      preLoaderRoute: typeof SeriesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -151,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuscarRoute: BuscarRoute,
   PerfilRoute: PerfilRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SeriesIdRoute: SeriesIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

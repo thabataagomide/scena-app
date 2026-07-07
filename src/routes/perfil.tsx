@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Settings, Trophy } from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
 import { PROFILE } from "@/lib/scena-data";
@@ -122,19 +122,24 @@ function PosterRow({
   return (
     <div className="-mx-5 flex gap-3 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {items.map((t) => (
-        <div key={t.id} className="w-[110px] shrink-0">
-          <div className="aspect-[2/3] overflow-hidden rounded-xl border border-border bg-surface-2">
+        <Link
+          key={t.id}
+          to="/series/$id"
+          params={{ id: t.id }}
+          className="w-[110px] shrink-0 block group active:scale-[0.98] transition-all duration-300 cursor-pointer"
+        >
+          <div className="aspect-[2/3] overflow-hidden rounded-xl border border-border bg-surface-2 relative">
             <img
               src={t.poster ?? t.backdrop}
               alt={t.title}
               referrerPolicy="no-referrer"
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           </div>
-          <div className="mt-2 truncate text-[12px] font-medium text-foreground">
+          <div className="mt-2 truncate text-[12px] font-medium text-foreground group-hover:text-accent transition-colors duration-200">
             {t.title}
           </div>
-        </div>
+        </Link>
       ))}
     </div>
   );

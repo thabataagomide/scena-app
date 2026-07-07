@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
 import { AppShell } from "@/components/scena/AppShell";
@@ -81,20 +81,22 @@ function BuscarPage() {
           </div>
         )}
         {results.map((t) => (
-          <div
+          <Link
             key={t.id}
-            className="relative h-[96px] overflow-hidden rounded-2xl border border-border"
+            to="/series/$id"
+            params={{ id: t.id }}
+            className="relative block h-[96px] overflow-hidden rounded-2xl border border-border group active:scale-[0.98] transition-transform duration-300"
           >
-            <Backdrop src={t.backdrop} alt={t.title} />
+            <Backdrop src={t.backdrop} alt={t.title} className="transition-transform duration-500 group-hover:scale-[1.02]" />
             <div className="relative flex h-full flex-col justify-center p-4">
               <div className="text-[11px] font-medium text-accent">
                 {t.kind === "series" ? "Série" : "Filme"} · {t.year}
               </div>
-              <div className="tracking-title text-[16px] font-semibold text-foreground">
+              <div className="tracking-title text-[16px] font-semibold text-foreground group-hover:text-accent transition-colors duration-200">
                 {t.title}
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </AppShell>

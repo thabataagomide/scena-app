@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Heart, MessageCircle, MoreHorizontal, Star, Sparkles } from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   component: HomePage,
 });
+
 
 function HomePage() {
   const [tab, setTab] = useState<"feed" | "novidades">("feed");
@@ -124,7 +125,13 @@ function FeedCard({ item }: { item: FeedItem }) {
 
           <div className="mt-8">
             <h3 className="tracking-title max-w-[80%] text-[26px] font-semibold leading-[1.1] text-foreground">
-              {item.title.title}
+              <Link
+                to="/series/$id"
+                params={{ id: item.title.id }}
+                className="hover:text-accent transition-colors duration-200"
+              >
+                {item.title.title}
+              </Link>
             </h3>
 
             {item.season && item.episode && (
