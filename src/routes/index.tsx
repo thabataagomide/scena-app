@@ -69,9 +69,15 @@ function Tabs<T extends string>({
 
 function FeedList() {
   return (
-    <div className="space-y-4">
-      {FEED.map((item) => (
-        <FeedCard key={item.id} item={item} />
+    <div className="space-y-5">
+      {FEED.map((item, i) => (
+        <div
+          key={item.id}
+          className="animate-rise"
+          style={{ animationDelay: `${i * 60}ms` }}
+        >
+          <FeedCard item={item} />
+        </div>
       ))}
     </div>
   );
@@ -81,87 +87,91 @@ function FeedCard({ item }: { item: FeedItem }) {
   const [liked, setLiked] = useState(false);
 
   return (
-    <article className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-[0_20px_40px_-24px_rgba(0,0,0,0.7)]">
-      <div className="relative min-h-[188px]">
+    <article className="card-surface group relative overflow-hidden transition-transform duration-500 hover:-translate-y-0.5">
+      <div className="relative min-h-[232px]">
         <Backdrop src={item.title.backdrop} alt={item.title.title} />
 
-        <div className="relative p-5">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
+        <div className="relative flex h-full flex-col p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
               <img
                 src={item.user.avatar}
                 alt={item.user.name}
-                className="h-10 w-10 rounded-full border border-border object-cover"
+                className="h-9 w-9 shrink-0 rounded-full border border-border object-cover"
               />
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[15px] font-semibold text-foreground">
+                  <span className="truncate text-[14px] font-semibold text-foreground">
                     {item.user.name}
                   </span>
-                  <span className="text-[12px] text-muted-foreground">
-                    {item.time}
+                  <span className="text-[11.5px] font-normal text-muted-foreground">
+                    · {item.time}
                   </span>
                 </div>
-                <div className="mt-0.5 text-[13px] font-medium text-accent">
+                <div className="mt-0.5 text-[12px] font-medium tracking-wide text-accent/90">
                   {item.action}
                 </div>
               </div>
             </div>
             <button
-              className="rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+              className="-mr-1 rounded-full p-1.5 text-muted-foreground/70 transition-colors hover:text-foreground"
               aria-label="Mais"
             >
-              <MoreHorizontal className="h-5 w-5" strokeWidth={1.6} />
+              <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.4} />
             </button>
           </div>
 
-          <h3 className="tracking-title mt-5 text-[22px] font-semibold text-foreground">
-            {item.title.title}
-          </h3>
+          <div className="mt-8">
+            <h3 className="tracking-title max-w-[80%] text-[26px] font-semibold leading-[1.1] text-foreground">
+              {item.title.title}
+            </h3>
 
-          {item.season && item.episode && (
-            <div className="mt-1 text-[12.5px] text-muted-foreground">
-              T{item.season} · E{item.episode}
-            </div>
-          )}
+            {item.season && item.episode && (
+              <div className="mt-2 text-[11.5px] font-medium tracking-wide text-muted-foreground">
+                Temporada {item.season} · Episódio {item.episode}
+              </div>
+            )}
 
-          {typeof item.rating === "number" && (
-            <div className="mt-2 flex items-center gap-0.5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                  key={i}
-                  className={cn(
-                    "h-4 w-4",
-                    i < item.rating! ? "fill-accent text-accent" : "text-muted-foreground/40",
-                  )}
-                  strokeWidth={1.5}
-                />
-              ))}
-            </div>
-          )}
+            {typeof item.rating === "number" && (
+              <div className="mt-3 flex items-center gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className={cn(
+                      "h-[15px] w-[15px]",
+                      i < item.rating!
+                        ? "fill-accent text-accent"
+                        : "text-muted-foreground/30",
+                    )}
+                    strokeWidth={1.4}
+                  />
+                ))}
+              </div>
+            )}
 
-          {item.comment && (
-            <p className="mt-3 max-w-[70%] text-[13.5px] leading-relaxed text-foreground/80">
-              &ldquo;{item.comment}&rdquo;
-            </p>
-          )}
+            {item.comment && (
+              <p className="mt-4 max-w-[76%] text-[13.5px] leading-relaxed text-foreground/75">
+                &ldquo;{item.comment}&rdquo;
+              </p>
+            )}
+          </div>
 
-          <div className="mt-5 flex items-center gap-5">
+          <div className="mt-8 flex items-center gap-6">
             <button
               onClick={() => setLiked((v) => !v)}
               className={cn(
-                "flex items-center gap-1.5 text-[13px] transition-colors",
+                "flex items-center gap-2 text-[12.5px] transition-all duration-200 active:scale-95",
                 liked ? "text-accent" : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Heart
-                className={cn("h-[18px] w-[18px]", liked && "fill-accent")}
-                strokeWidth={1.6}
+                className={cn("h-[17px] w-[17px]", liked && "fill-accent")}
+                strokeWidth={1.4}
               />
               {item.likes + (liked ? 1 : 0)}
             </button>
-            <button className="flex items-center gap-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground">
-              <MessageCircle className="h-[18px] w-[18px]" strokeWidth={1.6} />
+            <button className="flex items-center gap-2 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground">
+              <MessageCircle className="h-[17px] w-[17px]" strokeWidth={1.4} />
               {item.comments}
             </button>
           </div>
@@ -170,6 +180,7 @@ function FeedCard({ item }: { item: FeedItem }) {
     </article>
   );
 }
+
 
 function Novidades() {
   const groups = [
