@@ -41,7 +41,7 @@ function Tabs<T extends string>({
   items: { value: T; label: string }[];
 }) {
   return (
-    <div className="mb-6 flex items-center justify-center gap-10 border-b border-border">
+    <div className="mb-8 flex items-center justify-center gap-12">
       {items.map((it) => {
         const active = value === it.value;
         return (
@@ -49,15 +49,15 @@ function Tabs<T extends string>({
             key={it.value}
             onClick={() => onChange(it.value)}
             className={cn(
-              "tracking-eyebrow relative -mb-px py-3 text-[11px] font-semibold transition-colors",
-              active ? "text-foreground" : "text-muted-foreground",
+              "tracking-eyebrow relative py-2 text-[10.5px] font-semibold transition-colors duration-300",
+              active ? "text-foreground" : "text-muted-foreground/70 hover:text-foreground/80",
             )}
           >
             {it.label}
             <span
               className={cn(
-                "absolute inset-x-0 -bottom-px h-[2px] rounded-full transition-all duration-300",
-                active ? "bg-accent" : "bg-transparent",
+                "absolute -bottom-1 left-1/2 h-[2px] -translate-x-1/2 rounded-full transition-all duration-300",
+                active ? "w-6 bg-accent" : "w-0 bg-transparent",
               )}
             />
           </button>
@@ -66,6 +66,7 @@ function Tabs<T extends string>({
     </div>
   );
 }
+
 
 function FeedList() {
   return (
