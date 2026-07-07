@@ -24,11 +24,11 @@ export function Backdrop({
 
   const fadeLeft =
     intensity === "strong"
-      ? "linear-gradient(90deg, #0f0f0f 8%, rgba(15,15,15,0.85) 34%, rgba(15,15,15,0.35) 62%, rgba(15,15,15,0.15) 100%)"
-      : "linear-gradient(90deg, rgba(15,15,15,0.75) 0%, rgba(15,15,15,0.25) 60%, rgba(15,15,15,0.05) 100%)";
+      ? "linear-gradient(90deg, rgba(15,15,15,0.96) 0%, rgba(15,15,15,0.86) 34%, rgba(15,15,15,0.55) 62%, rgba(15,15,15,0.30) 100%)"
+      : "linear-gradient(90deg, rgba(15,15,15,0.78) 0%, rgba(15,15,15,0.32) 62%, rgba(15,15,15,0.10) 100%)";
 
   const fadeBottom =
-    "linear-gradient(180deg, rgba(9,9,9,0.15) 0%, rgba(9,9,9,0.55) 55%, #0f0f0f 100%)";
+    "linear-gradient(180deg, rgba(9,9,9,0.10) 0%, rgba(9,9,9,0.55) 55%, rgba(9,9,9,0.95) 100%)";
 
   const fade = side === "left" ? fadeLeft : fadeBottom;
 
@@ -40,7 +40,7 @@ export function Backdrop({
           alt={alt}
           referrerPolicy="no-referrer"
           onError={() => setFailed(true)}
-          className="h-full w-full object-cover opacity-90"
+          className="h-full w-full scale-[1.02] object-cover opacity-80 transition-transform duration-700"
           loading="lazy"
         />
       ) : (
@@ -48,12 +48,20 @@ export function Backdrop({
           className="h-full w-full"
           style={{
             background:
-              "radial-gradient(120% 80% at 80% 20%, #2a2a2a 0%, #141414 45%, #0b0b0b 100%)",
+              "radial-gradient(120% 80% at 80% 20%, #262626 0%, #141414 45%, #0b0b0b 100%)",
           }}
         />
       )}
       <div className="absolute inset-0" style={{ background: fade }} />
-      <div className="absolute inset-0 bg-black/10" />
+      <div className="absolute inset-0 bg-black/15" />
+      {/* subtle vignette to keep text side always richest */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(140% 90% at 100% 50%, transparent 40%, rgba(0,0,0,0.35) 100%)",
+        }}
+      />
     </div>
   );
 }
