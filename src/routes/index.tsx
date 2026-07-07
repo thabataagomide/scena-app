@@ -191,9 +191,9 @@ function Novidades() {
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface-2 p-4">
-        <Sparkles className="mt-0.5 h-4 w-4 text-accent" strokeWidth={1.6} />
+    <div className="space-y-10">
+      <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface-2/60 px-5 py-4">
+        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={1.4} />
         <p className="text-[13px] leading-relaxed text-muted-foreground">
           Priorizamos primeiro os lançamentos das séries que você já acompanha.
         </p>
@@ -202,18 +202,19 @@ function Novidades() {
       {groups.map((g) => (
         <section key={g.label}>
           <SectionTitle eyebrow="Lançamentos" title={g.label} />
-          <div className="space-y-3">
-            {g.items.map((it) => (
+          <div className="space-y-4">
+            {g.items.map((it, i) => (
               <div
                 key={it.id}
-                className="relative h-[110px] overflow-hidden rounded-2xl border border-border"
+                className="animate-rise relative h-[128px] overflow-hidden rounded-3xl border border-border"
+                style={{ animationDelay: `${i * 60}ms` }}
               >
                 <Backdrop src={it.title.backdrop} alt={it.title.title} />
-                <div className="relative flex h-full flex-col justify-end p-4">
-                  <div className="text-[11px] font-medium text-accent">
+                <div className="relative flex h-full flex-col justify-end p-5">
+                  <div className="text-[10.5px] font-medium tracking-wide text-accent">
                     {it.label}
                   </div>
-                  <div className="tracking-title text-[17px] font-semibold text-foreground">
+                  <div className="tracking-title mt-1 text-[19px] font-semibold text-foreground">
                     {it.title.title}
                   </div>
                 </div>
