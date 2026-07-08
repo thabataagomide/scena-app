@@ -197,7 +197,16 @@ function DiscoveryHome({
   onRemoveSearch: (value: string) => void;
   onClearSearches: () => void;
 }) {
-  const trending = searchService.getTrending();
+  const [trending, setTrending] = useState(() => searchService.getTrending());
+  useEffect(() => {
+    let cancelled = false;
+    searchService.getTrendingAsync().then((res) => {
+      if (!cancelled) setTrending(res);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="space-y-10">
