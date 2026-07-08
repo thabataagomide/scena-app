@@ -13,7 +13,6 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "../components/ui/sonner";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -95,9 +94,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Scena — Filmes e séries, do seu jeito" },
-      { name: "twitter:description", content: "Scena é o seu diário cinematográfico. Acompanhe filmes e séries, organize sua biblioteca e descubra o que amigos estão assistindo." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/jEjOyFWPH2gtKbXmEIKEiEpzk8i1/social-images/social-1783461418440-scena-logo.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/jEjOyFWPH2gtKbXmEIKEiEpzk8i1/social-images/social-1783461418440-scena-logo.webp" },
+      {
+        name: "twitter:description",
+        content:
+          "Scena é o seu diário cinematográfico. Acompanhe filmes e séries, organize sua biblioteca e descubra o que amigos estão assistindo.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/jEjOyFWPH2gtKbXmEIKEiEpzk8i1/social-images/social-1783461418440-scena-logo.webp",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/jEjOyFWPH2gtKbXmEIKEiEpzk8i1/social-images/social-1783461418440-scena-logo.webp",
+      },
     ],
     links: [
       {

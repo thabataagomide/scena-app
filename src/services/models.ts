@@ -1,12 +1,6 @@
 export type MediaKind = "movie" | "series";
 
-export type WatchStatus =
-  | "want"
-  | "watching"
-  | "uptodate"
-  | "finished"
-  | "paused"
-  | "abandoned";
+export type WatchStatus = "want" | "watching" | "uptodate" | "finished" | "paused" | "abandoned";
 
 export interface MediaBase {
   id: string;

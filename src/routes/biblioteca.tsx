@@ -1,5 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronRight, Bookmark, Heart, Check, Flag, Pause, X, ListMusic, Plus } from "lucide-react";
+import {
+  ChevronRight,
+  Bookmark,
+  Heart,
+  Check,
+  Flag,
+  Pause,
+  X,
+  ListMusic,
+  Plus,
+} from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
 import { userService } from "@/services/user.service";
 import type { LucideIcon } from "lucide-react";
@@ -45,12 +55,8 @@ function BibliotecaPage() {
                 <Icon className="h-4 w-4" strokeWidth={1.6} />
               </div>
               <div>
-                <div className="text-[14px] font-semibold text-foreground">
-                  {s.label}
-                </div>
-                <div className="mt-0.5 text-[11.5px] text-muted-foreground">
-                  {s.count} itens
-                </div>
+                <div className="text-[14px] font-semibold text-foreground">{s.label}</div>
+                <div className="mt-0.5 text-[11.5px] text-muted-foreground">{s.count} itens</div>
               </div>
             </button>
           );
@@ -81,10 +87,7 @@ function BibliotecaPage() {
                   {l.count} títulos · {l.privacy}
                 </div>
               </div>
-              <ChevronRight
-                className="h-4 w-4 text-muted-foreground"
-                strokeWidth={1.6}
-              />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" strokeWidth={1.6} />
             </div>
           ))}
         </div>

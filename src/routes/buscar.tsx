@@ -299,7 +299,9 @@ function ResultSection({
       <div className="space-y-3">
         {visibleItems.map((item) => {
           if (sectionKey === "series" || sectionKey === "movie") {
-            return <MediaResult key={(item as SearchMediaResult).id} title={item as SearchMediaResult} />;
+            return (
+              <MediaResult key={(item as SearchMediaResult).id} title={item as SearchMediaResult} />
+            );
           }
           if (sectionKey === "users")
             return <UserCard key={(item as SearchUserResult).id} user={item as SearchUserResult} />;

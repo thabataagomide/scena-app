@@ -37,7 +37,10 @@ export function tmdbProfile(path?: string | null) {
   return path ? `${TMDB_IMAGE_BASE}w185${path}` : undefined;
 }
 
-async function tmdbRequest<T>(path: string, params: Record<string, string | number | undefined> = {}): Promise<T | undefined> {
+async function tmdbRequest<T>(
+  path: string,
+  params: Record<string, string | number | undefined> = {},
+): Promise<T | undefined> {
   const key = tmdbApiKey();
   if (!key) return undefined;
 
@@ -61,11 +64,19 @@ export const tmdbClient = {
   hasKey: hasTmdbKey,
 
   searchTv(query: string) {
-    return tmdbRequest<TmdbPaged<TmdbSearchTv>>("/search/tv", { query, include_adult: "false", page: 1 });
+    return tmdbRequest<TmdbPaged<TmdbSearchTv>>("/search/tv", {
+      query,
+      include_adult: "false",
+      page: 1,
+    });
   },
 
   searchMovies(query: string) {
-    return tmdbRequest<TmdbPaged<TmdbSearchMovie>>("/search/movie", { query, include_adult: "false", page: 1 });
+    return tmdbRequest<TmdbPaged<TmdbSearchMovie>>("/search/movie", {
+      query,
+      include_adult: "false",
+      page: 1,
+    });
   },
 
   trendingTv() {

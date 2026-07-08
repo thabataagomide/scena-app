@@ -1,19 +1,10 @@
-import {
-  ALL_TITLES,
-  FEED,
-  LIBRARY_SECTIONS,
-  TITLES,
-  UPCOMING,
-} from "@/lib/scena-data";
-import type {
-  FeedItem,
-  LibrarySection,
-  MediaKind,
-  MediaTitle,
-  UpcomingGroups,
-} from "./models";
+import { ALL_TITLES, FEED, LIBRARY_SECTIONS, TITLES, UPCOMING } from "@/lib/scena-data";
+import type { FeedItem, LibrarySection, MediaKind, MediaTitle, UpcomingGroups } from "./models";
 
-const MEDIA_META: Record<string, { genres: string[]; tmdbRating: number; communityRating?: number }> = {
+const MEDIA_META: Record<
+  string,
+  { genres: string[]; tmdbRating: number; communityRating?: number }
+> = {
   vampireDiaries: {
     genres: ["Drama", "Fantasia", "Romance"],
     tmdbRating: 8.3,
@@ -78,7 +69,7 @@ function enrichFeedItem(item: (typeof FEED)[number]): FeedItem {
   };
 }
 
-function enrichUpcomingGroup(items: (typeof UPCOMING.today)): UpcomingGroups["today"] {
+function enrichUpcomingGroup(items: typeof UPCOMING.today): UpcomingGroups["today"] {
   return items.map((item) => ({
     ...item,
     title: enrichMedia(item.title as MediaTitle),

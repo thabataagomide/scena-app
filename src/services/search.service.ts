@@ -80,12 +80,8 @@ export const searchService = {
     const mediaMatches = mediaService.getAllMedia().filter((media) => matchesMedia(media, query));
 
     return {
-      series: mediaMatches
-        .filter((media) => media.kind === "series")
-        .map(withSearchMeta),
-      movie: mediaMatches
-        .filter((media) => media.kind === "movie")
-        .map(withSearchMeta),
+      series: mediaMatches.filter((media) => media.kind === "series").map(withSearchMeta),
+      movie: mediaMatches.filter((media) => media.kind === "movie").map(withSearchMeta),
       users: userService
         .getPublicUsers()
         .filter((user) => matchesUser(user, query))
@@ -122,10 +118,7 @@ export const searchService = {
     const q = rawQuery.trim();
     if (!q || !tmdbClient.hasKey()) return mock;
 
-    const [tv, movies] = await Promise.all([
-      tmdbClient.searchTv(q),
-      tmdbClient.searchMovies(q),
-    ]);
+    const [tv, movies] = await Promise.all([tmdbClient.searchTv(q), tmdbClient.searchMovies(q)]);
     const mapped = mapTmdbSearchResultsToMedia(tv?.results, movies?.results);
 
     return {
@@ -140,10 +133,7 @@ export const searchService = {
     const mock = this.getTrending();
     if (!tmdbClient.hasKey()) return mock;
 
-    const [tv, movies] = await Promise.all([
-      tmdbClient.trendingTv(),
-      tmdbClient.trendingMovies(),
-    ]);
+    const [tv, movies] = await Promise.all([tmdbClient.trendingTv(), tmdbClient.trendingMovies()]);
     const mapped = mapTmdbSearchResultsToMedia(
       tv?.results?.slice(0, 12),
       movies?.results?.slice(0, 12),

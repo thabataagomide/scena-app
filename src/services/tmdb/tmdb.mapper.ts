@@ -34,8 +34,7 @@ function yearFromDate(date?: string | null): number {
 
 export function mapTmdbTvToSeries(t: TmdbSearchTv | TmdbTvDetails): Series {
   const name = "name" in t ? t.name : "";
-  const first =
-    "first_air_date" in t ? t.first_air_date : (t as TmdbSearchTv).first_air_date;
+  const first = "first_air_date" in t ? t.first_air_date : (t as TmdbSearchTv).first_air_date;
   return {
     id: `tv-${t.id}`,
     title: name,
@@ -153,7 +152,8 @@ export function mapTmdbToSeriesDetails({
     }
   }
 
-  const rating = typeof details.vote_average === "number" ? Number(details.vote_average.toFixed(1)) : 0;
+  const rating =
+    typeof details.vote_average === "number" ? Number(details.vote_average.toFixed(1)) : 0;
   const communityRating = Number((rating / 2).toFixed(1)); // TMDb 0–10 → Scena 0–5
 
   return {
