@@ -34,6 +34,7 @@ import { AppShell, SectionTitle } from "@/components/scena/AppShell";
 import { MediaCardVerticalSm, titleToMedia } from "@/components/scena/MediaCard";
 import { seriesService } from "@/services/series.service";
 import { userService } from "@/services/user.service";
+import { mediaService } from "@/services/media.service";
 import type {
   Comment as CommentData,
   Episode as EpisodeData,
@@ -82,6 +83,8 @@ function SeriesDetailsPage() {
   const navigate = useNavigate();
 
   const currentUser = userService.getCurrentUser();
+  const PROFILE = userService.getProfile();
+  const ALL_TITLES = mediaService.getAllMedia();
   const titleBase = seriesService.getSeries(id);
   const details = useMemo(() => seriesService.getSeriesDetails(id), [id]);
 
@@ -212,7 +215,7 @@ function SeriesDetailsPage() {
     e.preventDefault();
     if (!newCommentText.trim()) return;
     setCommentsList((prev) => [
-      { user: { name: PROFILE.name, avatar: PROFILE.avatar }, comment: newCommentText, time: "Agora mesmo", likes: 0, rating: userRating || undefined },
+      { user: { name: PROFILE.displayName, avatar: PROFILE.avatar }, comment: newCommentText, time: "Agora mesmo", likes: 0, rating: userRating || undefined },
       ...prev,
     ]);
     setNewCommentText("");
@@ -577,7 +580,7 @@ function SeriesDetailsPage() {
 
           {/* Comment input */}
           <form onSubmit={handlePostComment} className="flex gap-3 mb-6 items-start">
-            <img src={PROFILE.avatar} alt={PROFILE.name} className="h-8 w-8 rounded-full border border-border object-cover shrink-0 mt-0.5" />
+            <img src={PROFILE.avatar} alt={PROFILE.displayName} className="h-8 w-8 rounded-full border border-border object-cover shrink-0 mt-0.5" />
             <div className="flex-1">
               <textarea
                 value={newCommentText}
