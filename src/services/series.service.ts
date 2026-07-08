@@ -242,7 +242,7 @@ const UPCOMING_RELEASES: UpcomingRelease[] = [
   {
     id: "up3",
     titleId: "arcane",
-    episodeNum: "T2 · E1",
+    episodeNum: "T2 Â· E1",
     episodeTitle: "Nova Temporada",
     releaseDate: "Sexta-feira, 04:00",
     countdown: "lanca em 3 dias",
@@ -251,7 +251,7 @@ const UPCOMING_RELEASES: UpcomingRelease[] = [
   {
     id: "up4",
     titleId: "strangerThings",
-    episodeNum: "T5 · E1",
+    episodeNum: "T5 Â· E1",
     episodeTitle: "O Comeco do Fim",
     releaseDate: "Em 4 dias",
     countdown: "lanca em 4 dias",
@@ -263,21 +263,21 @@ const RECENTLY_RELEASED: RecentlyReleased[] = [
   {
     id: "rr1",
     titleId: "succession",
-    episodeLabel: "T4 · E10",
+    episodeLabel: "T4 Â· E10",
     episodeTitle: "Com Olhos Abertos",
     releasedAt: "Ontem",
   },
   {
     id: "rr2",
     titleId: "theBear",
-    episodeLabel: "T3 · E2",
+    episodeLabel: "T3 Â· E2",
     episodeTitle: "Next",
     releasedAt: "Ha 2 dias",
   },
   {
     id: "rr3",
     titleId: "strangerThings",
-    episodeLabel: "T4 · E9",
+    episodeLabel: "T4 Â· E9",
     episodeTitle: "O Plano de Onze",
     releasedAt: "Ha 3 dias",
   },
