@@ -118,31 +118,39 @@ export const searchService = {
     const q = rawQuery.trim();
     if (!q || !tmdbClient.hasKey()) return mock;
 
-    const [tv, movies] = await Promise.all([tmdbClient.searchTv(q), tmdbClient.searchMovies(q)]);
-    const mapped = mapTmdbSearchResultsToMedia(tv?.results, movies?.results);
+    try {
+      const [tv, movies] = await Promise.all([tmdbClient.searchTv(q), tmdbClient.searchMovies(q)]);
+      const mapped = mapTmdbSearchResultsToMedia(tv?.results, movies?.results);
 
-    return {
-      series: mapped.series.map((m) => withSearchMeta(m)),
-      movie: mapped.movies.map((m) => withSearchMeta(m)),
-      users: mock.users,
-      lists: mock.lists,
-    };
+      return {
+        series: tv ? mapped.series.map((m) => withSearchMeta(m)) : mock.series,
+        movie: movies ? mapped.movies.map((m) => withSearchMeta(m)) : mock.movie,
+        users: mock.users,
+        lists: mock.lists,
+      };
+    } catch {
+      return mock;
+    }
   },
 
   async getTrendingAsync() {
     const mock = this.getTrending();
     if (!tmdbClient.hasKey()) return mock;
 
-    const [tv, movies] = await Promise.all([tmdbClient.trendingTv(), tmdbClient.trendingMovies()]);
-    const mapped = mapTmdbSearchResultsToMedia(
-      tv?.results?.slice(0, 12),
-      movies?.results?.slice(0, 12),
-    );
-    return {
-      series: mapped.series.map(withSearchMeta),
-      movies: mapped.movies.map(withSearchMeta),
-      lists: mock.lists,
-      users: mock.users,
-    };
+    try {
+      const [tv, movies] = await Promise.all([tmdbClient.trendingTv(), tmdbClient.trendingMovies()]);
+      const mapped = mapTmdbSearchResultsToMedia(
+        tv?.results?.slice(0, 12),
+        movies?.results?.slice(0, 12),
+      );
+      return {
+        series: tv ? mapped.series.map(withSearchMeta) : mock.series,
+        movies: movies ? mapped.movies.map(withSearchMeta) : mock.movies,
+        lists: mock.lists,
+        users: mock.users,
+      };
+    } catch {
+      return mock;
+    }
   },
 };

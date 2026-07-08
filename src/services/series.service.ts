@@ -699,40 +699,55 @@ export const seriesService = {
     if (!parsed || parsed.kind !== "tv" || !tmdbClient.hasKey()) {
       return this.getSeries(id);
     }
-    const details = await tmdbClient.tvDetails(parsed.tmdbId);
-    return details ? mapTmdbTvToSeries(details) : this.getSeries(id);
+    try {
+      const details = await tmdbClient.tvDetails(parsed.tmdbId);
+      return details ? mapTmdbTvToSeries(details) : this.getSeries(id);
+    } catch {
+      return this.getSeries(id);
+    }
   },
 
   async getSeriesDetailsAsync(id: string): Promise<SeriesDetails> {
+    const mock = this.getSeriesDetails(id);
     const parsed = parseTmdbId(id);
     if (!parsed || parsed.kind !== "tv" || !tmdbClient.hasKey()) {
-      return this.getSeriesDetails(id);
+      return mock;
     }
-    const details = await tmdbClient.tvDetails(parsed.tmdbId);
-    if (!details) return this.getSeriesDetails(id);
+    try {
+      const details = await tmdbClient.tvDetails(parsed.tmdbId);
+      if (!details) return mock;
 
-    const validSeasons = (details.seasons ?? []).filter((s) => s.season_number > 0);
-    const [seasons, credits, providers] = await Promise.all([
-      Promise.all(
-        validSeasons.map((s) => tmdbClient.tvSeason(parsed.tmdbId, s.season_number)),
-      ).then(
-        (arr) =>
-          arr.filter(Boolean) as NonNullable<Awaited<ReturnType<typeof tmdbClient.tvSeason>>>[],
-      ),
-      tmdbClient.tvCredits(parsed.tmdbId),
-      tmdbClient.tvWatchProviders(parsed.tmdbId),
-    ]);
+      const validSeasons = (details.seasons ?? []).filter((s) => s.season_number > 0);
+      const [seasons, credits, providers] = await Promise.all([
+        Promise.all(
+          validSeasons.map((s) => tmdbClient.tvSeason(parsed.tmdbId, s.season_number)),
+        ).then(
+          (arr) =>
+            arr.filter(Boolean) as NonNullable<Awaited<ReturnType<typeof tmdbClient.tvSeason>>>[],
+        ),
+        tmdbClient.tvCredits(parsed.tmdbId),
+        tmdbClient.tvWatchProviders(parsed.tmdbId),
+      ]);
 
-    return mapTmdbToSeriesDetails({ details, seasons, credits, providers });
+      if (validSeasons.length > 0 && seasons.length === 0) return mock;
+      return mapTmdbToSeriesDetails({ details, seasons, credits, providers });
+    } catch {
+      return mock;
+    }
   },
 
   async getSimilarSeriesAsync(id: string): Promise<Series[]> {
+    const mock = this.getSimilarSeries(id);
     const parsed = parseTmdbId(id);
     if (!parsed || parsed.kind !== "tv" || !tmdbClient.hasKey()) {
-      return this.getSimilarSeries(id);
+      return mock;
     }
-    const recs = await tmdbClient.tvRecommendations(parsed.tmdbId);
-    if (!recs?.results?.length) return this.getSimilarSeries(id);
-    return recs.results.slice(0, 12).map(mapTmdbTvToSeries);
+    try {
+      const recs = await tmdbClient.tvRecommendations(parsed.tmdbId);
+      if (!recs?.results?.length) return mock;
+      return recs.results.slice(0, 12).map(mapTmdbTvToSeries);
+    } catch {
+      return mock;
+    }
   },
 };
