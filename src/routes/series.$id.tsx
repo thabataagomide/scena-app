@@ -34,6 +34,7 @@ import { AppShell, SectionTitle } from "@/components/scena/AppShell";
 import { MediaCardVerticalSm, titleToMedia } from "@/components/scena/MediaCard";
 import { seriesService } from "@/services/series.service";
 import { userService } from "@/services/user.service";
+import { mediaService } from "@/services/media.service";
 import type {
   Comment as CommentData,
   Episode as EpisodeData,
