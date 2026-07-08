@@ -246,7 +246,7 @@ function SeriesDetailsPage() {
 
   const activeEpisodes = details.episodes[selectedSeason] ?? [];
   const statusMeta = STATUS_META[status];
-  const similarTitles = ALL_TITLES.filter((t) => t.kind === "series" && t.id !== id);
+  
 
   const backdropSrc = titleBase?.backdrop ?? "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg";
   const posterSrc   = titleBase?.poster ?? titleBase?.backdrop;
