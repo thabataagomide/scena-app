@@ -1,6 +1,8 @@
 import { mediaService } from "./media.service";
 import { movieService } from "./movie.service";
 import { userService } from "./user.service";
+import { tmdbClient } from "./tmdb/tmdb.client";
+import { mapTmdbSearchResultsToMedia } from "./tmdb/tmdb.mapper";
 import type { List, MediaTitle, User, WatchStatus } from "./models";
 
 export const SEARCH_FILTERS = [
