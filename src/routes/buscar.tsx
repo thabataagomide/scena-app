@@ -1,16 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Search as SearchIcon } from "lucide-react";
-import { AppShell } from "@/components/scena/AppShell";
-import { Backdrop } from "@/components/scena/Backdrop";
-import { ALL_TITLES } from "@/lib/scena-data";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Clock, Search as SearchIcon, TrendingUp, X } from "lucide-react";
+import { AppShell, SectionTitle } from "@/components/scena/AppShell";
+import { MediaCard, titleToMedia, type WatchStatus } from "@/components/scena/MediaCard";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { ALL_TITLES, TITLES, type Title } from "@/lib/scena-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/buscar")({
   head: () => ({
     meta: [
-      { title: "Buscar · Scena" },
-      { name: "description", content: "Pesquise filmes, séries, usuários e listas." },
+      { title: "Buscar - Scena" },
+      { name: "description", content: "Descubra filmes, series, usuarios e listas no Scena." },
     ],
   }),
   component: BuscarPage,
@@ -18,87 +20,601 @@ export const Route = createFileRoute("/buscar")({
 
 const FILTERS = [
   { key: "all", label: "Tudo" },
-  { key: "series", label: "Séries" },
+  { key: "series", label: "Series" },
   { key: "movie", label: "Filmes" },
-  { key: "users", label: "Usuários" },
+  { key: "users", label: "Usuarios" },
   { key: "lists", label: "Listas" },
 ] as const;
 
-function BuscarPage() {
-  const [q, setQ] = useState("");
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
+type FilterKey = (typeof FILTERS)[number]["key"];
+type UserResult = {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar: string;
+  followers: number;
+  following: boolean;
+};
+type ListResult = {
+  id: string;
+  title: string;
+  creator: Pick<UserResult, "id" | "username" | "displayName" | "avatar">;
+  cover: string;
+  titleCount: number;
+  likes: number;
+};
 
-  const results = useMemo(() => {
-    return ALL_TITLES.filter((t) => {
-      const kindOk =
-        filter === "all" ||
-        (filter === "series" && t.kind === "series") ||
-        (filter === "movie" && t.kind === "movie");
-      const matches =
-        !q.trim() || t.title.toLowerCase().includes(q.trim().toLowerCase());
-      return kindOk && matches;
-    });
-  }, [q, filter]);
+const RECENT_SEARCHES_KEY = "scena.search.recent.v1";
+const RESULT_LIMIT = 3;
+const POPULAR_SEARCHES = ["Arcane", "Severance", "Duna", "Breaking Bad"];
+
+const MEDIA_META: Record<string, { genres: string[]; tmdbRating: number; status?: WatchStatus }> = {
+  vampireDiaries: { genres: ["Drama", "Fantasia", "Romance"], tmdbRating: 8.3, status: "watching" },
+  arcane: { genres: ["Animacao", "Acao", "Drama"], tmdbRating: 8.8, status: "want" },
+  interstellar: { genres: ["Ficcao", "Drama", "Aventura"], tmdbRating: 8.7 },
+  breakingBad: { genres: ["Crime", "Drama", "Suspense"], tmdbRating: 8.9, status: "finished" },
+  strangerThings: { genres: ["Ficcao", "Terror", "Drama"], tmdbRating: 8.6 },
+  succession: { genres: ["Drama", "Comedia", "Familia"], tmdbRating: 8.3 },
+  theBear: { genres: ["Drama", "Comedia"], tmdbRating: 8.2, status: "watching" },
+  duna: { genres: ["Ficcao", "Aventura", "Drama"], tmdbRating: 8.5 },
+  severance: { genres: ["Drama", "Misterio", "Ficcao"], tmdbRating: 8.7, status: "watching" },
+};
+
+const USERS: UserResult[] = [
+  {
+    id: "ana",
+    username: "@anaribeiro",
+    displayName: "Ana Ribeiro",
+    avatar: avatarUrl("ana"),
+    followers: 1284,
+    following: true,
+  },
+  {
+    id: "mari",
+    username: "@marifilmes",
+    displayName: "Mari Almeida",
+    avatar: avatarUrl("mari"),
+    followers: 842,
+    following: false,
+  },
+  {
+    id: "lucas",
+    username: "@lucaswatch",
+    displayName: "Lucas Martins",
+    avatar: avatarUrl("lucas"),
+    followers: 621,
+    following: false,
+  },
+  {
+    id: "gabi",
+    username: "@gabidiario",
+    displayName: "Gabi Costa",
+    avatar: avatarUrl("gabi"),
+    followers: 509,
+    following: true,
+  },
+];
+
+const LISTS: ListResult[] = [
+  {
+    id: "comfort-shows",
+    title: "Series para ver de madrugada",
+    creator: USERS[1],
+    cover: TITLES.theBear.backdrop,
+    titleCount: 18,
+    likes: 326,
+  },
+  {
+    id: "space-mood",
+    title: "Ficcao cientifica elegante",
+    creator: USERS[2],
+    cover: TITLES.interstellar.backdrop,
+    titleCount: 24,
+    likes: 512,
+  },
+  {
+    id: "antiheroes",
+    title: "Anti-herois inesqueciveis",
+    creator: USERS[0],
+    cover: TITLES.breakingBad.backdrop,
+    titleCount: 15,
+    likes: 441,
+  },
+  {
+    id: "prestige-tv",
+    title: "TV de prestigio sem pressa",
+    creator: USERS[3],
+    cover: TITLES.succession.backdrop,
+    titleCount: 31,
+    likes: 278,
+  },
+];
+
+const searchHistoryStore = {
+  load() {
+    if (typeof window === "undefined") return [] as string[];
+    try {
+      const value = window.localStorage.getItem(RECENT_SEARCHES_KEY);
+      return value ? (JSON.parse(value) as string[]) : [];
+    } catch {
+      return [];
+    }
+  },
+  save(searches: string[]) {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+  },
+};
+
+function BuscarPage() {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [expanded, setExpanded] = useState<Record<FilterKey, boolean>>({
+    all: false,
+    series: false,
+    movie: false,
+    users: false,
+    lists: false,
+  });
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    setRecentSearches(searchHistoryStore.load());
+  }, []);
+
+  const trimmedQuery = query.trim();
+  const hasQuery = trimmedQuery.length > 0;
+
+  const groupedResults = useMemo(() => {
+    const q = normalize(trimmedQuery);
+    const titleMatches = ALL_TITLES.filter((title) => matchesTitle(title, q));
+
+    return {
+      series: titleMatches.filter((title) => title.kind === "series"),
+      movie: titleMatches.filter((title) => title.kind === "movie"),
+      users: USERS.filter((user) => matchesUser(user, q)),
+      lists: LISTS.filter((list) => matchesList(list, q)),
+    };
+  }, [trimmedQuery]);
+
+  const visibleSections = getVisibleSections(filter, groupedResults);
+  const totalResults = visibleSections.reduce((sum, section) => sum + section.items.length, 0);
+
+  const saveSearch = (value: string) => {
+    const clean = value.trim();
+    if (!clean) return;
+    const next = [
+      clean,
+      ...recentSearches.filter((item) => normalize(item) !== normalize(clean)),
+    ].slice(0, 6);
+    setRecentSearches(next);
+    searchHistoryStore.save(next);
+  };
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    saveSearch(query);
+  };
+
+  const removeRecentSearch = (value: string) => {
+    const next = recentSearches.filter((item) => item !== value);
+    setRecentSearches(next);
+    searchHistoryStore.save(next);
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    searchHistoryStore.save([]);
+  };
+
+  const chooseSearch = (value: string) => {
+    setQuery(value);
+    saveSearch(value);
+    inputRef.current?.focus();
+  };
 
   return (
     <AppShell>
-      <div className="mb-5">
-        <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
-          <SearchIcon
-            className="h-[18px] w-[18px] text-muted-foreground"
-            strokeWidth={1.6}
-          />
+      <form onSubmit={handleSubmit} className="mb-5">
+        <div className="flex items-center gap-3 rounded-[24px] border border-border bg-surface-2 px-4 py-3.5 shadow-[var(--shadow-card)] focus-within:border-accent/35">
+          <SearchIcon className="h-[19px] w-[19px] text-muted-foreground" strokeWidth={1.6} />
           <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar filmes, séries, pessoas…"
-            className="w-full bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+            ref={inputRef}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onBlur={() => saveSearch(query)}
+            placeholder="Buscar series, filmes, usuarios e listas"
+            className="w-full bg-transparent text-[15px] font-medium text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
+          {hasQuery && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+              aria-label="Limpar busca"
+            >
+              <X className="h-4 w-4" strokeWidth={1.7} />
+            </button>
+          )}
         </div>
-      </div>
+      </form>
 
-      <div className="-mx-5 mb-6 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {FILTERS.map((f) => (
+      <div className="-mx-5 mb-8 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {FILTERS.map((item) => (
           <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
+            key={item.key}
+            type="button"
+            onClick={() => setFilter(item.key)}
             className={cn(
-              "shrink-0 rounded-full border px-4 py-1.5 text-[12.5px] font-medium transition-all",
-              filter === f.key
+              "shrink-0 rounded-full border px-4 py-1.5 text-[12.5px] font-semibold transition-all",
+              filter === item.key
                 ? "border-accent/40 bg-accent/10 text-accent"
                 : "border-border bg-transparent text-muted-foreground hover:text-foreground",
             )}
           >
-            {f.label}
+            {item.label}
           </button>
         ))}
       </div>
 
-      <div className="space-y-3">
-        {results.length === 0 && (
-          <div className="rounded-2xl border border-border bg-surface-2 p-6 text-center text-[13px] text-muted-foreground">
-            Nenhum resultado.
+      {!hasQuery ? (
+        <DiscoveryHome
+          recentSearches={recentSearches}
+          onChooseSearch={chooseSearch}
+          onRemoveSearch={removeRecentSearch}
+          onClearSearches={clearRecentSearches}
+        />
+      ) : totalResults > 0 ? (
+        <div className="space-y-9">
+          {visibleSections.map((section) => (
+            <ResultSection
+              key={section.key}
+              sectionKey={section.key}
+              title={section.title}
+              items={section.items}
+              expanded={expanded[section.key]}
+              onToggle={() =>
+                setExpanded((state) => ({ ...state, [section.key]: !state[section.key] }))
+              }
+            />
+          ))}
+        </div>
+      ) : (
+        <EmptyState onChooseSearch={chooseSearch} />
+      )}
+    </AppShell>
+  );
+}
+
+function DiscoveryHome({
+  recentSearches,
+  onChooseSearch,
+  onRemoveSearch,
+  onClearSearches,
+}: {
+  recentSearches: string[];
+  onChooseSearch: (value: string) => void;
+  onRemoveSearch: (value: string) => void;
+  onClearSearches: () => void;
+}) {
+  return (
+    <div className="space-y-10">
+      <section>
+        <SectionHeader
+          title="Buscas recentes"
+          action={recentSearches.length > 0 ? "Limpar" : undefined}
+          onAction={onClearSearches}
+        />
+        {recentSearches.length > 0 ? (
+          <div className="space-y-2.5">
+            {recentSearches.map((item) => (
+              <div
+                key={item}
+                className="flex items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2.5"
+              >
+                <button
+                  type="button"
+                  onClick={() => onChooseSearch(item)}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                >
+                  <Clock className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+                  <span className="truncate text-[13.5px] font-medium text-foreground">{item}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRemoveSearch(item)}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                  aria-label={`Remover ${item}`}
+                >
+                  <X className="h-3.5 w-3.5" strokeWidth={1.7} />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-border bg-card px-4 py-5 text-[13px] leading-relaxed text-muted-foreground">
+            Suas buscas recentes vao aparecer aqui.
           </div>
         )}
-        {results.map((t) => (
-          <Link
-            key={t.id}
-            to="/series/$id"
-            params={{ id: t.id }}
-            className="relative block h-[96px] overflow-hidden rounded-2xl border border-border group active:scale-[0.98] transition-transform duration-300"
-          >
-            <Backdrop src={t.backdrop} alt={t.title} className="transition-transform duration-500 group-hover:scale-[1.02]" />
-            <div className="relative flex h-full flex-col justify-center p-4">
-              <div className="text-[11px] font-medium text-accent">
-                {t.kind === "series" ? "Série" : "Filme"} · {t.year}
-              </div>
-              <div className="tracking-title text-[16px] font-semibold text-foreground group-hover:text-accent transition-colors duration-200">
-                {t.title}
-              </div>
-            </div>
-          </Link>
+      </section>
+
+      <TrendingMedia
+        title="Trending TV Shows"
+        items={[TITLES.severance, TITLES.arcane, TITLES.theBear, TITLES.breakingBad]}
+      />
+      <TrendingMedia title="Trending Movies" items={[TITLES.duna, TITLES.interstellar]} />
+      <section>
+        <SectionTitle eyebrow="Em alta" title="Trending Lists" />
+        <div className="space-y-3">
+          {LISTS.slice(0, 3).map((list) => (
+            <ListCard key={list.id} list={list} />
+          ))}
+        </div>
+      </section>
+      <section>
+        <SectionTitle eyebrow="Comunidade" title="Trending Users" />
+        <div className="space-y-3">
+          {USERS.slice(0, 3).map((user) => (
+            <UserCard key={user.id} user={user} />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ResultSection({
+  sectionKey,
+  title,
+  items,
+  expanded,
+  onToggle,
+}: {
+  sectionKey: Exclude<FilterKey, "all">;
+  title: string;
+  items: Array<Title | UserResult | ListResult>;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  if (items.length === 0) return null;
+  const visibleItems = expanded ? items : items.slice(0, RESULT_LIMIT);
+  const canExpand = items.length > RESULT_LIMIT;
+
+  return (
+    <section>
+      <SectionHeader
+        title={title}
+        count={items.length}
+        action={canExpand ? (expanded ? "Menos" : "Ver todos") : undefined}
+        onAction={onToggle}
+      />
+      <div className="space-y-3">
+        {visibleItems.map((item) => {
+          if (sectionKey === "series" || sectionKey === "movie") {
+            return <MediaResult key={(item as Title).id} title={item as Title} />;
+          }
+          if (sectionKey === "users")
+            return <UserCard key={(item as UserResult).id} user={item as UserResult} />;
+          return <ListCard key={(item as ListResult).id} list={item as ListResult} />;
+        })}
+      </div>
+    </section>
+  );
+}
+
+function MediaResult({ title }: { title: Title }) {
+  const meta = MEDIA_META[title.id];
+  return (
+    <MediaCard
+      media={{ ...titleToMedia(title), genres: meta?.genres, tmdbRating: meta?.tmdbRating }}
+      orientation="horizontal"
+      size="lg"
+      status={meta?.status}
+      readonly={title.kind === "movie"}
+      callbacks={title.kind === "movie" ? { onOpen: () => undefined } : undefined}
+    />
+  );
+}
+
+function TrendingMedia({ title, items }: { title: string; items: Title[] }) {
+  return (
+    <section>
+      <SectionTitle eyebrow="Em alta" title={title} />
+      <div className="-mx-5 flex gap-3 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {items.map((item) => (
+          <MediaCard
+            key={item.id}
+            media={{
+              ...titleToMedia(item),
+              genres: MEDIA_META[item.id]?.genres,
+              tmdbRating: MEDIA_META[item.id]?.tmdbRating,
+            }}
+            size="sm"
+            orientation="vertical"
+            readonly
+            className="w-[116px] shrink-0"
+          />
         ))}
       </div>
-    </AppShell>
+    </section>
+  );
+}
+
+function UserCard({ user }: { user: UserResult }) {
+  return (
+    <Link
+      to="/perfil"
+      className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 transition-transform duration-300 active:scale-[0.98]"
+    >
+      <Avatar className="h-12 w-12 border border-border">
+        <AvatarImage src={user.avatar} alt={user.displayName} />
+        <AvatarFallback>{user.displayName.slice(0, 1)}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[14px] font-semibold text-foreground">{user.username}</div>
+        <div className="truncate text-[12.5px] text-muted-foreground">{user.displayName}</div>
+        <div className="mt-1 text-[11.5px] text-muted-foreground">
+          {formatCompact(user.followers)} seguidores
+        </div>
+      </div>
+      <Button
+        type="button"
+        size="sm"
+        variant={user.following ? "secondary" : "default"}
+        onClick={(event) => event.preventDefault()}
+        className="rounded-full px-3"
+      >
+        {user.following ? "Seguindo" : "Seguir"}
+      </Button>
+    </Link>
+  );
+}
+
+function ListCard({ list }: { list: ListResult }) {
+  return (
+    <button
+      type="button"
+      data-list-id={list.id}
+      className="group flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left transition-transform duration-300 active:scale-[0.98]"
+    >
+      <div className="relative h-[74px] w-[58px] shrink-0 overflow-hidden rounded-xl border border-border bg-surface-2">
+        <img
+          src={list.cover}
+          alt=""
+          referrerPolicy="no-referrer"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[14px] font-semibold text-foreground group-hover:text-accent">
+          {list.title}
+        </div>
+        <div className="mt-1 truncate text-[12.5px] text-muted-foreground">
+          por {list.creator.displayName}
+        </div>
+        <div className="mt-2 flex items-center gap-2 text-[11.5px] text-muted-foreground">
+          <span>{list.titleCount} titulos</span>
+          <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+          <span>{formatCompact(list.likes)} curtidas</span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function EmptyState({ onChooseSearch }: { onChooseSearch: (value: string) => void }) {
+  return (
+    <div className="rounded-[24px] border border-border bg-card px-5 py-8 text-center shadow-[var(--shadow-card)]">
+      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-border text-accent">
+        <TrendingUp className="h-5 w-5" strokeWidth={1.5} />
+      </div>
+      <h2 className="tracking-title mt-4 text-[19px] font-semibold text-foreground">
+        Nada por aqui ainda
+      </h2>
+      <p className="mx-auto mt-2 max-w-[300px] text-[13px] leading-relaxed text-muted-foreground">
+        Tente buscar por um titulo popular, uma pessoa da comunidade ou uma lista publica.
+      </p>
+      <div className="mt-5 flex flex-wrap justify-center gap-2">
+        {POPULAR_SEARCHES.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onChooseSearch(item)}
+            className="rounded-full border border-border px-3 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({
+  title,
+  count,
+  action,
+  onAction,
+}: {
+  title: string;
+  count?: number;
+  action?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <h2 className="tracking-title truncate text-[18px] font-semibold text-foreground">
+          {title}
+        </h2>
+        {count !== undefined && (
+          <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+            {count} resultado{count === 1 ? "" : "s"}
+          </div>
+        )}
+      </div>
+      {action && (
+        <button
+          type="button"
+          onClick={onAction}
+          className="shrink-0 text-[12px] font-semibold text-accent transition-colors hover:text-accent/80"
+        >
+          {action}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function getVisibleSections(
+  filter: FilterKey,
+  groups: { series: Title[]; movie: Title[]; users: UserResult[]; lists: ListResult[] },
+) {
+  const sections = [
+    { key: "series", title: "TV Shows", items: groups.series },
+    { key: "movie", title: "Movies", items: groups.movie },
+    { key: "users", title: "Users", items: groups.users },
+    { key: "lists", title: "Lists", items: groups.lists },
+  ] as const;
+  return filter === "all" ? [...sections] : sections.filter((section) => section.key === filter);
+}
+
+function matchesTitle(title: Title, query: string) {
+  if (!query) return true;
+  const meta = MEDIA_META[title.id];
+  return [title.title, title.year.toString(), title.kind, ...(meta?.genres ?? [])].some((value) =>
+    normalize(value).includes(query),
+  );
+}
+
+function matchesUser(user: UserResult, query: string) {
+  if (!query) return true;
+  return [user.username, user.displayName].some((value) => normalize(value).includes(query));
+}
+
+function matchesList(list: ListResult, query: string) {
+  if (!query) return true;
+  return [list.title, list.creator.displayName, list.creator.username].some((value) =>
+    normalize(value).includes(query),
+  );
+}
+
+function normalize(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function avatarUrl(seed: string) {
+  return `https://i.pravatar.cc/120?u=${encodeURIComponent(seed)}`;
+}
+
+function formatCompact(value: number) {
+  return new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(
+    value,
   );
 }

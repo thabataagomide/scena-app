@@ -8,6 +8,8 @@ export type Title = {
   backdrop: string;
   poster?: string;
   overview?: string;
+  genres?: string[];
+  tmdbRating?: number;
 };
 
 const TMDB = (p: string) => `https://image.tmdb.org/t/p/w1280${p}`;
@@ -102,8 +104,7 @@ export type FeedItem = {
   comments: number;
 };
 
-const AV = (seed: string) =>
-  `https://i.pravatar.cc/120?u=${encodeURIComponent(seed)}`;
+const AV = (seed: string) => `https://i.pravatar.cc/120?u=${encodeURIComponent(seed)}`;
 
 export const FEED: FeedItem[] = [
   {
@@ -241,12 +242,7 @@ export const PROFILE = {
   ],
   favoriteSeries: [TITLES.severance, TITLES.arcane, TITLES.breakingBad],
   favoriteMovies: [TITLES.interstellar, TITLES.duna],
-  recentlyWatched: [
-    TITLES.theBear,
-    TITLES.severance,
-    TITLES.duna,
-    TITLES.strangerThings,
-  ],
+  recentlyWatched: [TITLES.theBear, TITLES.severance, TITLES.duna, TITLES.strangerThings],
   avatar: AV("ana"),
 };
 
