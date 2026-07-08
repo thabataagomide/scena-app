@@ -84,9 +84,27 @@ function SeriesDetailsPage() {
 
   const currentUser = userService.getCurrentUser();
   const PROFILE = userService.getProfile();
-  const ALL_TITLES = mediaService.getAllMedia();
-  const titleBase = seriesService.getSeries(id);
-  const details = useMemo(() => seriesService.getSeriesDetails(id), [id]);
+  const [titleBase, setTitleBase] = useState(() => seriesService.getSeries(id));
+  const [details, setDetails] = useState<SeriesDetails>(() => seriesService.getSeriesDetails(id));
+  const [similarTitles, setSimilarTitles] = useState(() =>
+    mediaService.getAllMedia().filter((t) => t.kind === "series" && t.id !== id),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    seriesService.getSeriesAsync(id).then((s) => {
+      if (!cancelled && s) setTitleBase(s);
+    });
+    seriesService.getSeriesDetailsAsync(id).then((d) => {
+      if (!cancelled) setDetails(d);
+    });
+    seriesService.getSimilarSeriesAsync(id).then((sims) => {
+      if (!cancelled) setSimilarTitles(sims.filter((t) => t.id !== id));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   // ── State ──
   const [status, setStatus] = useState<WatchStatus>(() => {
