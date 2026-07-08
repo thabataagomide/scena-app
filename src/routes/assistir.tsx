@@ -2,7 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Check, Calendar, Bell, BellRing, Play, Share2, Sparkles, Clock, RefreshCw } from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
-import { WATCHING as INITIAL_WATCHING, TITLES, ALL_TITLES, PROFILE, type WatchingItem } from "@/lib/scena-data";
+import { mediaService } from "@/services/media.service";
+import { seriesService } from "@/services/series.service";
+import { userService } from "@/services/user.service";
+import type { UpcomingRelease, WatchingItem } from "@/services/models";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -16,130 +19,30 @@ export const Route = createFileRoute("/assistir")({
   component: AssistirPage,
 });
 
-// Rich titles mapping to show real upcoming details in UX
-const EPISODE_TITLES: Record<string, Record<number, string>> = {
-  severance: {
-    1: "Good News About Hell",
-    2: "Half Loop",
-    3: "In Perpetuity",
-    4: "The You You Are",
-    5: "The Grim Barbarity of Baird Creek",
-    6: "Hide and Seek",
-    7: "Defiant Jazz",
-    8: "What's for Dinner?",
-    9: "The We We Are",
-    10: "Trojan's Horse",
-  },
-  theBear: {
-    1: "System",
-    2: "Hands",
-    3: "Brigade",
-    4: "Dogs",
-    5: "Sheridan",
-    6: "Ceres",
-    7: "Review",
-    8: "Braciole",
-    9: "Next",
-    10: "Violet",
-  },
-  arcane: {
-    1: "Welcome to the Playground",
-    2: "Some Mysteries Are Better Left Unsolved",
-    3: "The Base Violence Necessary for Change",
-    4: "Happy Progress Day!",
-    5: "Everybody Wants to Be My Enemy",
-    6: "When These Walls Come Tumbling Down",
-    7: "The Boy Saviour",
-    8: "Oil and Water",
-    9: "The Monster You Created",
-  },
-};
+const INITIAL_WATCHING = seriesService.getWatching();
+const UPCOMING_RELEASES = seriesService.getUpcomingReleases();
+const RECENTLY_RELEASED = seriesService.getRecentlyReleased();
 
 interface ExtendedWatchingItem extends WatchingItem {
   hasNewEpisode?: boolean;
 }
 
-interface UpcomingRelease {
-  id: string;
-  titleId: string;
-  episodeNum: string;
-  episodeTitle: string;
-  releaseDate: string;
-  countdown: string;
-  group: "today" | "tomorrow" | "week";
+interface WatchingCardProps {
+  item: ExtendedWatchingItem;
+  onMarkWatched: (id: string) => void;
 }
 
-const UPCOMING_RELEASES: UpcomingRelease[] = [
-  {
-    id: "up1",
-    titleId: "severance",
-    episodeNum: "E6",
-    episodeTitle: "Trojan's Horse",
-    releaseDate: "Hoje, 21:00",
-    countdown: "lança em 2 horas",
-    group: "today",
-  },
-  {
-    id: "up2",
-    titleId: "theBear",
-    episodeNum: "E4",
-    episodeTitle: "Violet",
-    releaseDate: "Amanhã, 19:00",
-    countdown: "lança em 24 horas",
-    group: "tomorrow",
-  },
-  {
-    id: "up3",
-    titleId: "arcane",
-    episodeNum: "T2 · E1",
-    episodeTitle: "Nova Temporada",
-    releaseDate: "Sexta-feira, 04:00",
-    countdown: "lança em 3 dias",
-    group: "week",
-  },
-  {
-    id: "up4",
-    titleId: "strangerThings",
-    episodeNum: "T5 · E1",
-    episodeTitle: "O Começo do Fim",
-    releaseDate: "Em 4 dias",
-    countdown: "lança em 4 dias",
-    group: "week",
-  },
-];
-
-const RECENTLY_RELEASED = [
-  {
-    id: "rr1",
-    titleId: "succession",
-    episodeLabel: "T4 · E10",
-    episodeTitle: "Com Olhos Abertos",
-    releasedAt: "Ontem",
-  },
-  {
-    id: "rr2",
-    titleId: "theBear",
-    episodeLabel: "T3 · E2",
-    episodeTitle: "Next",
-    releasedAt: "Há 2 dias",
-  },
-  {
-    id: "rr3",
-    titleId: "strangerThings",
-    episodeLabel: "T4 · E9",
-    episodeTitle: "O Plano de Onze",
-    releasedAt: "Há 3 dias",
-  },
-];
-
 function AssistirPage() {
+  const profile = userService.getCurrentUser();
+  const resumeTitle = mediaService.getMediaById("severance");
+
   // Stateful states for the user cockpit
   const [watchingList, setWatchingList] = useState<ExtendedWatchingItem[]>(() =>
     INITIAL_WATCHING.map((w) => ({ ...w, hasNewEpisode: false }))
   );
   const [completedList, setCompletedList] = useState<ExtendedWatchingItem[]>([]);
   const [followedShows, setFollowedShows] = useState<string[]>(() =>
-    PROFILE.favoriteSeries.map((s) => s.id)
+    (profile.favoriteSeries ?? []).map((s) => s.id)
   );
   const [stats, setStats] = useState({
     episodesWatched: 243,
@@ -218,7 +121,8 @@ function AssistirPage() {
       const nextEpisodeNum = targetItem.episode + 1;
       const showId = targetItem.title.id;
       const nextEpisodeTitle =
-        EPISODE_TITLES[showId]?.[nextEpisodeNum + 1] || `Episódio ${nextEpisodeNum + 1}`;
+        seriesService.getEpisodeTitle(showId, nextEpisodeNum + 1) ||
+        `Episódio ${nextEpisodeNum + 1}`;
       const newNextLabel = `T${targetItem.season} · E${nextEpisodeNum + 1} · ${nextEpisodeTitle}`;
 
       toast.success(`Episódio marcado como visto!`, {
@@ -251,7 +155,7 @@ function AssistirPage() {
         ...targetItem,
         watchedEpisodes: 0,
         episode: 1,
-        nextLabel: `T${targetItem.season} · E2 · ${EPISODE_TITLES[targetItem.title.id]?.[2] || "Episódio 2"}`,
+        nextLabel: `T${targetItem.season} · E2 · ${seriesService.getEpisodeTitle(targetItem.title.id, 2) || "Episódio 2"}`,
         hasNewEpisode: false,
       },
     ]);
@@ -273,7 +177,7 @@ function AssistirPage() {
           watchedEpisodes: showToRestore.totalEpisodes - 1, // 9/10 watched
           episode: showToRestore.totalEpisodes - 1,
           hasNewEpisode: true, // Show the glowing new episode badge
-          nextLabel: `T${showToRestore.season} · E${showToRestore.totalEpisodes} · ${EPISODE_TITLES[showToRestore.title.id]?.[showToRestore.totalEpisodes] || "Episódio " + showToRestore.totalEpisodes}`,
+          nextLabel: `T${showToRestore.season} · E${showToRestore.totalEpisodes} · ${seriesService.getEpisodeTitle(showToRestore.title.id, showToRestore.totalEpisodes) || "Episódio " + showToRestore.totalEpisodes}`,
         },
       ]);
       toast.success(`Novo episódio disponível! 📺`, {
@@ -297,7 +201,7 @@ function AssistirPage() {
   const resetAllData = () => {
     setWatchingList(INITIAL_WATCHING.map((w) => ({ ...w, hasNewEpisode: false })));
     setCompletedList([]);
-    setFollowedShows(PROFILE.favoriteSeries.map((s) => s.id));
+    setFollowedShows((profile.favoriteSeries ?? []).map((s) => s.id));
     setStats({ episodesWatched: 243, hoursWatched: 162.5 });
     toast.info("Mock de dados redefinido!");
   };
@@ -318,13 +222,13 @@ function AssistirPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
-              src={PROFILE.avatar}
-              alt={PROFILE.name}
+              src={profile.avatar}
+              alt={profile.name}
               className="h-10 w-10 rounded-full border border-border object-cover"
             />
             <div>
               <div className="text-[13px] font-semibold text-foreground leading-tight">
-                {PROFILE.name}
+                {profile.name}
               </div>
               <div className="text-[11px] text-muted-foreground">Cockpit de Reprodução</div>
             </div>
@@ -379,7 +283,7 @@ function AssistirPage() {
         <div className="relative h-[156px] overflow-hidden rounded-3xl border border-border group cursor-pointer">
           {/* Backdrop screenshot background */}
           <img
-            src={TITLES.severance.backdrop}
+            src={resumeTitle?.backdrop ?? ""}
             alt="Severance paused screenshot"
             className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-[1.02]"
           />
@@ -454,7 +358,7 @@ function AssistirPage() {
             Séries que você segue
           </div>
           <div className="-mx-5 flex gap-2.5 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
-            {ALL_TITLES.filter((t) => t.kind === "series").map((t) => {
+            {seriesService.getAllSeries().map((t) => {
               const isFollowed = followedShows.includes(t.id);
               return (
                 <button
@@ -539,7 +443,7 @@ function AssistirPage() {
         />
         <div className="-mx-5 flex gap-4.5 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-3">
           {RECENTLY_RELEASED.map((rr) => {
-            const titleInfo = TITLES[rr.titleId];
+            const titleInfo = mediaService.getMediaById(rr.titleId);
             if (!titleInfo) return null;
 
             return (
@@ -674,7 +578,7 @@ function AssistirPage() {
 
 // Sub-component: Upcoming Item Row
 function UpcomingRow({ up }: { up: UpcomingRelease }) {
-  const titleInfo = TITLES[up.titleId];
+  const titleInfo = mediaService.getMediaById(up.titleId);
   if (!titleInfo) return null;
 
   return (
@@ -807,3 +711,5 @@ function WatchingCard({ item, onMarkWatched }: WatchingCardProps) {
     </article>
   );
 }
+
+

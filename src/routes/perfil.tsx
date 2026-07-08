@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Settings, Trophy } from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
-import { PROFILE } from "@/lib/scena-data";
+import { userService } from "@/services/user.service";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
@@ -14,6 +14,8 @@ export const Route = createFileRoute("/perfil")({
 });
 
 function PerfilPage() {
+  const profile = userService.getProfile();
+
   return (
     <AppShell>
       <div className="relative">
@@ -26,30 +28,30 @@ function PerfilPage() {
 
         <div className="flex flex-col items-center text-center">
           <img
-            src={PROFILE.avatar}
-            alt={PROFILE.name}
+            src={profile.avatar}
+            alt={profile.name}
             className="h-24 w-24 rounded-full border border-border object-cover"
           />
           <h1 className="tracking-title mt-4 text-[22px] font-semibold text-foreground">
-            {PROFILE.name}
+            {profile.name}
           </h1>
           <div className="mt-0.5 text-[13px] text-muted-foreground">
-            {PROFILE.username} · <span>{PROFILE.flag} {PROFILE.country}</span>
+            {profile.username} · <span>{profile.flag} {profile.country}</span>
           </div>
           <p className="mt-3 max-w-[320px] text-[13.5px] leading-relaxed text-foreground/80">
-            {PROFILE.bio}
+            {profile.bio}
           </p>
 
           <div className="mt-5 flex items-center gap-6">
-            <FollowStat label="Seguidores" value={PROFILE.followers} />
+            <FollowStat label="Seguidores" value={profile.followers} />
             <div className="h-6 w-px bg-border" />
-            <FollowStat label="Seguindo" value={PROFILE.following} />
+            <FollowStat label="Seguindo" value={Number(profile.following)} />
           </div>
         </div>
       </div>
 
       <div className="mt-8 grid grid-cols-4 gap-2">
-        {PROFILE.stats.map((s) => (
+        {(profile.stats ?? []).map((s) => (
           <div
             key={s.label}
             className="rounded-2xl border border-border bg-card px-2 py-4 text-center"
@@ -66,17 +68,17 @@ function PerfilPage() {
 
       <div className="mt-10">
         <SectionTitle eyebrow="Favoritas" title="Séries favoritas" />
-        <PosterRow items={PROFILE.favoriteSeries} />
+        <PosterRow items={profile.favoriteSeries ?? []} />
       </div>
 
       <div className="mt-10">
         <SectionTitle eyebrow="Favoritos" title="Filmes favoritos" />
-        <PosterRow items={PROFILE.favoriteMovies} />
+        <PosterRow items={profile.favoriteMovies ?? []} />
       </div>
 
       <div className="mt-10">
         <SectionTitle eyebrow="Diário" title="Últimos assistidos" />
-        <PosterRow items={PROFILE.recentlyWatched} />
+        <PosterRow items={profile.recentlyWatched ?? []} />
       </div>
 
       <div className="mt-10">
@@ -144,3 +146,4 @@ function PosterRow({
     </div>
   );
 }
+

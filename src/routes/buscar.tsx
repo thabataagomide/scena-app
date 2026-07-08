@@ -2,10 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Clock, Search as SearchIcon, TrendingUp, X } from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
-import { MediaCard, titleToMedia, type WatchStatus } from "@/components/scena/MediaCard";
+import { MediaCard, titleToMedia } from "@/components/scena/MediaCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ALL_TITLES, TITLES, type Title } from "@/lib/scena-data";
+import {
+  SEARCH_FILTERS,
+  searchService,
+  type SearchFilterKey,
+  type SearchListResult,
+  type SearchMediaResult,
+  type SearchUserResult,
+} from "@/services/search.service";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/buscar")({
@@ -18,117 +25,8 @@ export const Route = createFileRoute("/buscar")({
   component: BuscarPage,
 });
 
-const FILTERS = [
-  { key: "all", label: "Tudo" },
-  { key: "series", label: "Series" },
-  { key: "movie", label: "Filmes" },
-  { key: "users", label: "Usuarios" },
-  { key: "lists", label: "Listas" },
-] as const;
-
-type FilterKey = (typeof FILTERS)[number]["key"];
-type UserResult = {
-  id: string;
-  username: string;
-  displayName: string;
-  avatar: string;
-  followers: number;
-  following: boolean;
-};
-type ListResult = {
-  id: string;
-  title: string;
-  creator: Pick<UserResult, "id" | "username" | "displayName" | "avatar">;
-  cover: string;
-  titleCount: number;
-  likes: number;
-};
-
 const RECENT_SEARCHES_KEY = "scena.search.recent.v1";
 const RESULT_LIMIT = 3;
-const POPULAR_SEARCHES = ["Arcane", "Severance", "Duna", "Breaking Bad"];
-
-const MEDIA_META: Record<string, { genres: string[]; tmdbRating: number; status?: WatchStatus }> = {
-  vampireDiaries: { genres: ["Drama", "Fantasia", "Romance"], tmdbRating: 8.3, status: "watching" },
-  arcane: { genres: ["Animacao", "Acao", "Drama"], tmdbRating: 8.8, status: "want" },
-  interstellar: { genres: ["Ficcao", "Drama", "Aventura"], tmdbRating: 8.7 },
-  breakingBad: { genres: ["Crime", "Drama", "Suspense"], tmdbRating: 8.9, status: "finished" },
-  strangerThings: { genres: ["Ficcao", "Terror", "Drama"], tmdbRating: 8.6 },
-  succession: { genres: ["Drama", "Comedia", "Familia"], tmdbRating: 8.3 },
-  theBear: { genres: ["Drama", "Comedia"], tmdbRating: 8.2, status: "watching" },
-  duna: { genres: ["Ficcao", "Aventura", "Drama"], tmdbRating: 8.5 },
-  severance: { genres: ["Drama", "Misterio", "Ficcao"], tmdbRating: 8.7, status: "watching" },
-};
-
-const USERS: UserResult[] = [
-  {
-    id: "ana",
-    username: "@anaribeiro",
-    displayName: "Ana Ribeiro",
-    avatar: avatarUrl("ana"),
-    followers: 1284,
-    following: true,
-  },
-  {
-    id: "mari",
-    username: "@marifilmes",
-    displayName: "Mari Almeida",
-    avatar: avatarUrl("mari"),
-    followers: 842,
-    following: false,
-  },
-  {
-    id: "lucas",
-    username: "@lucaswatch",
-    displayName: "Lucas Martins",
-    avatar: avatarUrl("lucas"),
-    followers: 621,
-    following: false,
-  },
-  {
-    id: "gabi",
-    username: "@gabidiario",
-    displayName: "Gabi Costa",
-    avatar: avatarUrl("gabi"),
-    followers: 509,
-    following: true,
-  },
-];
-
-const LISTS: ListResult[] = [
-  {
-    id: "comfort-shows",
-    title: "Series para ver de madrugada",
-    creator: USERS[1],
-    cover: TITLES.theBear.backdrop,
-    titleCount: 18,
-    likes: 326,
-  },
-  {
-    id: "space-mood",
-    title: "Ficcao cientifica elegante",
-    creator: USERS[2],
-    cover: TITLES.interstellar.backdrop,
-    titleCount: 24,
-    likes: 512,
-  },
-  {
-    id: "antiheroes",
-    title: "Anti-herois inesqueciveis",
-    creator: USERS[0],
-    cover: TITLES.breakingBad.backdrop,
-    titleCount: 15,
-    likes: 441,
-  },
-  {
-    id: "prestige-tv",
-    title: "TV de prestigio sem pressa",
-    creator: USERS[3],
-    cover: TITLES.succession.backdrop,
-    titleCount: 31,
-    likes: 278,
-  },
-];
 
 const searchHistoryStore = {
   load() {
@@ -149,9 +47,9 @@ const searchHistoryStore = {
 function BuscarPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<FilterKey>("all");
+  const [filter, setFilter] = useState<SearchFilterKey>("all");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [expanded, setExpanded] = useState<Record<FilterKey, boolean>>({
+  const [expanded, setExpanded] = useState<Record<SearchFilterKey, boolean>>({
     all: false,
     series: false,
     movie: false,
@@ -168,15 +66,7 @@ function BuscarPage() {
   const hasQuery = trimmedQuery.length > 0;
 
   const groupedResults = useMemo(() => {
-    const q = normalize(trimmedQuery);
-    const titleMatches = ALL_TITLES.filter((title) => matchesTitle(title, q));
-
-    return {
-      series: titleMatches.filter((title) => title.kind === "series"),
-      movie: titleMatches.filter((title) => title.kind === "movie"),
-      users: USERS.filter((user) => matchesUser(user, q)),
-      lists: LISTS.filter((list) => matchesList(list, q)),
-    };
+    return searchService.search(trimmedQuery);
   }, [trimmedQuery]);
 
   const visibleSections = getVisibleSections(filter, groupedResults);
@@ -242,7 +132,7 @@ function BuscarPage() {
       </form>
 
       <div className="-mx-5 mb-8 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {FILTERS.map((item) => (
+        {SEARCH_FILTERS.map((item) => (
           <button
             key={item.key}
             type="button"
@@ -299,6 +189,8 @@ function DiscoveryHome({
   onRemoveSearch: (value: string) => void;
   onClearSearches: () => void;
 }) {
+  const trending = searchService.getTrending();
+
   return (
     <div className="space-y-10">
       <section>
@@ -340,15 +232,12 @@ function DiscoveryHome({
         )}
       </section>
 
-      <TrendingMedia
-        title="Trending TV Shows"
-        items={[TITLES.severance, TITLES.arcane, TITLES.theBear, TITLES.breakingBad]}
-      />
-      <TrendingMedia title="Trending Movies" items={[TITLES.duna, TITLES.interstellar]} />
+      <TrendingMedia title="Trending TV Shows" items={trending.series} />
+      <TrendingMedia title="Trending Movies" items={trending.movies} />
       <section>
         <SectionTitle eyebrow="Em alta" title="Trending Lists" />
         <div className="space-y-3">
-          {LISTS.slice(0, 3).map((list) => (
+          {trending.lists.slice(0, 3).map((list) => (
             <ListCard key={list.id} list={list} />
           ))}
         </div>
@@ -356,7 +245,7 @@ function DiscoveryHome({
       <section>
         <SectionTitle eyebrow="Comunidade" title="Trending Users" />
         <div className="space-y-3">
-          {USERS.slice(0, 3).map((user) => (
+          {trending.users.slice(0, 3).map((user) => (
             <UserCard key={user.id} user={user} />
           ))}
         </div>
@@ -372,9 +261,9 @@ function ResultSection({
   expanded,
   onToggle,
 }: {
-  sectionKey: Exclude<FilterKey, "all">;
+  sectionKey: Exclude<SearchFilterKey, "all">;
   title: string;
-  items: Array<Title | UserResult | ListResult>;
+  items: Array<SearchMediaResult | SearchUserResult | SearchListResult>;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -393,32 +282,31 @@ function ResultSection({
       <div className="space-y-3">
         {visibleItems.map((item) => {
           if (sectionKey === "series" || sectionKey === "movie") {
-            return <MediaResult key={(item as Title).id} title={item as Title} />;
+            return <MediaResult key={(item as SearchMediaResult).id} title={item as SearchMediaResult} />;
           }
           if (sectionKey === "users")
-            return <UserCard key={(item as UserResult).id} user={item as UserResult} />;
-          return <ListCard key={(item as ListResult).id} list={item as ListResult} />;
+            return <UserCard key={(item as SearchUserResult).id} user={item as SearchUserResult} />;
+          return <ListCard key={(item as SearchListResult).id} list={item as SearchListResult} />;
         })}
       </div>
     </section>
   );
 }
 
-function MediaResult({ title }: { title: Title }) {
-  const meta = MEDIA_META[title.id];
+function MediaResult({ title }: { title: SearchMediaResult }) {
   return (
     <MediaCard
-      media={{ ...titleToMedia(title), genres: meta?.genres, tmdbRating: meta?.tmdbRating }}
+      media={titleToMedia(title)}
       orientation="horizontal"
       size="lg"
-      status={meta?.status}
+      status={title.status}
       readonly={title.kind === "movie"}
       callbacks={title.kind === "movie" ? { onOpen: () => undefined } : undefined}
     />
   );
 }
 
-function TrendingMedia({ title, items }: { title: string; items: Title[] }) {
+function TrendingMedia({ title, items }: { title: string; items: SearchMediaResult[] }) {
   return (
     <section>
       <SectionTitle eyebrow="Em alta" title={title} />
@@ -426,11 +314,7 @@ function TrendingMedia({ title, items }: { title: string; items: Title[] }) {
         {items.map((item) => (
           <MediaCard
             key={item.id}
-            media={{
-              ...titleToMedia(item),
-              genres: MEDIA_META[item.id]?.genres,
-              tmdbRating: MEDIA_META[item.id]?.tmdbRating,
-            }}
+            media={titleToMedia(item)}
             size="sm"
             orientation="vertical"
             readonly
@@ -442,7 +326,7 @@ function TrendingMedia({ title, items }: { title: string; items: Title[] }) {
   );
 }
 
-function UserCard({ user }: { user: UserResult }) {
+function UserCard({ user }: { user: SearchUserResult }) {
   return (
     <Link
       to="/perfil"
@@ -472,7 +356,7 @@ function UserCard({ user }: { user: UserResult }) {
   );
 }
 
-function ListCard({ list }: { list: ListResult }) {
+function ListCard({ list }: { list: SearchListResult }) {
   return (
     <button
       type="button"
@@ -506,6 +390,8 @@ function ListCard({ list }: { list: ListResult }) {
 }
 
 function EmptyState({ onChooseSearch }: { onChooseSearch: (value: string) => void }) {
+  const popularSearches = searchService.getPopularSearches();
+
   return (
     <div className="rounded-[24px] border border-border bg-card px-5 py-8 text-center shadow-[var(--shadow-card)]">
       <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-border text-accent">
@@ -518,7 +404,7 @@ function EmptyState({ onChooseSearch }: { onChooseSearch: (value: string) => voi
         Tente buscar por um titulo popular, uma pessoa da comunidade ou uma lista publica.
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
-        {POPULAR_SEARCHES.map((item) => (
+        {popularSearches.map((item) => (
           <button
             key={item}
             type="button"
@@ -570,8 +456,13 @@ function SectionHeader({
 }
 
 function getVisibleSections(
-  filter: FilterKey,
-  groups: { series: Title[]; movie: Title[]; users: UserResult[]; lists: ListResult[] },
+  filter: SearchFilterKey,
+  groups: {
+    series: SearchMediaResult[];
+    movie: SearchMediaResult[];
+    users: SearchUserResult[];
+    lists: SearchListResult[];
+  },
 ) {
   const sections = [
     { key: "series", title: "TV Shows", items: groups.series },
@@ -582,35 +473,11 @@ function getVisibleSections(
   return filter === "all" ? [...sections] : sections.filter((section) => section.key === filter);
 }
 
-function matchesTitle(title: Title, query: string) {
-  if (!query) return true;
-  const meta = MEDIA_META[title.id];
-  return [title.title, title.year.toString(), title.kind, ...(meta?.genres ?? [])].some((value) =>
-    normalize(value).includes(query),
-  );
-}
-
-function matchesUser(user: UserResult, query: string) {
-  if (!query) return true;
-  return [user.username, user.displayName].some((value) => normalize(value).includes(query));
-}
-
-function matchesList(list: ListResult, query: string) {
-  if (!query) return true;
-  return [list.title, list.creator.displayName, list.creator.username].some((value) =>
-    normalize(value).includes(query),
-  );
-}
-
 function normalize(value: string) {
   return value
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-}
-
-function avatarUrl(seed: string) {
-  return `https://i.pravatar.cc/120?u=${encodeURIComponent(seed)}`;
 }
 
 function formatCompact(value: number) {

@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Heart, MessageCircle, MoreHorizontal, Star, Sparkles } from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
 import { Backdrop } from "@/components/scena/Backdrop";
-import { FEED, UPCOMING, type FeedItem } from "@/lib/scena-data";
+import { mediaService } from "@/services/media.service";
+import type { FeedItem } from "@/services/models";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -70,9 +71,11 @@ function Tabs<T extends string>({
 
 
 function FeedList() {
+  const feed = mediaService.getFeed();
+
   return (
     <div className="space-y-5">
-      {FEED.map((item, i) => (
+      {feed.map((item, i) => (
         <div
           key={item.id}
           className="animate-rise"
@@ -191,10 +194,11 @@ function FeedCard({ item }: { item: FeedItem }) {
 
 
 function Novidades() {
+  const upcoming = mediaService.getUpcoming();
   const groups = [
-    { label: "Hoje", items: UPCOMING.today },
-    { label: "Esta semana", items: UPCOMING.week },
-    { label: "Este mês", items: UPCOMING.month },
+    { label: "Hoje", items: upcoming.today },
+    { label: "Esta semana", items: upcoming.week },
+    { label: "Este mês", items: upcoming.month },
   ];
 
   return (

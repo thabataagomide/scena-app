@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronRight, Bookmark, Heart, Check, Flag, Pause, X, ListMusic, Plus } from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
-import { LIBRARY_SECTIONS } from "@/lib/scena-data";
+import { userService } from "@/services/user.service";
 import type { LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/biblioteca")({
@@ -26,12 +26,15 @@ const ICON_MAP: Record<string, LucideIcon> = {
 };
 
 function BibliotecaPage() {
+  const librarySections = userService.getLibrarySections();
+  const myLists = userService.getMyLists();
+
   return (
     <AppShell>
       <SectionTitle eyebrow="Privada" title="Sua biblioteca" />
 
       <div className="grid grid-cols-2 gap-3">
-        {LIBRARY_SECTIONS.map((s) => {
+        {librarySections.map((s) => {
           const Icon = ICON_MAP[s.key] ?? Bookmark;
           return (
             <button
@@ -65,18 +68,14 @@ function BibliotecaPage() {
           }
         />
         <div className="space-y-3">
-          {[
-            { name: "Sci-fi para maratonar", count: 18, privacy: "Pública" },
-            { name: "Comfort watches", count: 24, privacy: "Privada" },
-            { name: "A24 essenciais", count: 11, privacy: "Pública" },
-          ].map((l) => (
+          {myLists.map((l) => (
             <div
-              key={l.name}
+              key={l.id}
               className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-4"
             >
               <div>
                 <div className="text-[14.5px] font-semibold text-foreground">
-                  {l.name}
+                  {l.name ?? l.title}
                 </div>
                 <div className="mt-0.5 text-[12px] text-muted-foreground">
                   {l.count} títulos · {l.privacy}

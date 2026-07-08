@@ -32,7 +32,16 @@ import {
 } from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
 import { MediaCardVerticalSm, titleToMedia } from "@/components/scena/MediaCard";
-import { TITLES, ALL_TITLES, PROFILE, WATCHING, type Title } from "@/lib/scena-data";
+import { seriesService } from "@/services/series.service";
+import { userService } from "@/services/user.service";
+import type {
+  Comment as CommentData,
+  Episode as EpisodeData,
+  Person as CastMember,
+  SeriesDetails,
+  StreamingPlatform,
+  WatchStatus,
+} from "@/services/models";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +49,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/series/$id")({
   head: ({ params }) => {
-    const titleInfo = TITLES[params.id];
+    const titleInfo = seriesService.getSeries(params.id);
     return {
       meta: [
         { title: titleInfo ? `${titleInfo.title} · Scena` : "Série · Scena" },
@@ -51,62 +60,8 @@ export const Route = createFileRoute("/series/$id")({
   component: SeriesDetailsPage,
 });
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface CastMember {
-  name: string;
-  character: string;
-  avatar: string;
-}
-
-export interface EpisodeData {
-  episodeNum: number;
-  title: string;
-  runtime: string;
-  airDate: string;
-  rating: number;
-  overview: string;
-}
-
-export interface CommentData {
-  user: { name: string; avatar: string };
-  comment: string;
-  time: string;
-  likes: number;
-  rating?: number;
-}
-
-export interface SeriesDetails {
-  id: string;
-  originalTitle?: string;
-  tagline: string;
-  year: number;
-  runtime: string;
-  genres: string[];
-  ageRating: string;
-  averageRating: number;
-  ratingsCount: string;
-  seasonsCount: number;
-  streamingPlatforms: StreamingPlatform[];
-  cast: CastMember[];
-  episodes: Record<number, EpisodeData[]>;
-  comments: CommentData[];
-}
-
-export interface StreamingPlatform {
-  name: string;
-  logoColor: string;
-  icon?: string;
-}
-
-export type WatchStatus =
-  | "want"
-  | "watching"
-  | "uptodate"
-  | "finished"
-  | "paused"
-  | "abandoned";
-
+// Shared data models are imported from the service layer. The UI stays bound to
+// Scena contracts, not to mock, TMDb, or Supabase response shapes.
 // ─── Status Meta ──────────────────────────────────────────────────────────────
 
 export const STATUS_META: Record<WatchStatus, { label: string; dot: string; color: string; desc: string }> = {
@@ -122,191 +77,17 @@ const STATUS_ORDER: WatchStatus[] = ["want", "watching", "uptodate", "finished",
 
 // ─── Mock Database ────────────────────────────────────────────────────────────
 
-const AV = (s: string) => `https://i.pravatar.cc/100?u=${encodeURIComponent(s)}`;
-
-const SERIES_DB: Record<string, SeriesDetails> = {
-  severance: {
-    id: "severance",
-    originalTitle: "Severance",
-    tagline: "Por favor, esteja ciente de que você concordou em dividir sua mente.",
-    year: 2022,
-    runtime: "50 min",
-    genres: ["Ficção Científica", "Suspense", "Drama"],
-    ageRating: "16+",
-    averageRating: 4.8,
-    ratingsCount: "18.4k",
-    seasonsCount: 2,
-    streamingPlatforms: [{ name: "Apple TV+", logoColor: "bg-black border-white/20 text-white" }],
-    cast: [
-      { name: "Adam Scott",          character: "Mark Scout",      avatar: AV("adam") },
-      { name: "Britt Lower",         character: "Helly R.",        avatar: AV("britt") },
-      { name: "Patricia Arquette",   character: "Harmony Cobel",   avatar: AV("patricia") },
-      { name: "Zach Cherry",         character: "Dylan George",    avatar: AV("zach") },
-      { name: "John Turturro",       character: "Irving Bailiff",  avatar: AV("john") },
-      { name: "Christopher Walken",  character: "Burt Goodman",    avatar: AV("chris") },
-    ],
-    episodes: {
-      1: [
-        { episodeNum: 1, title: "Good News About Hell",               runtime: "48m", airDate: "18 Fev 2022", rating: 4.6, overview: "Mark é promovido a chefe da equipe da divisão de refinamento de macro-dados cortados." },
-        { episodeNum: 2, title: "Half Loop",                          runtime: "46m", airDate: "25 Fev 2022", rating: 4.5, overview: "A equipe treina a nova recruta Helly, que logo começa a se rebelar contra as regras." },
-        { episodeNum: 3, title: "In Perpetuity",                      runtime: "48m", airDate: "4 Mar 2022",  rating: 4.7, overview: "Helly tenta enviar uma mensagem para sua versão externa enquanto Irving faz descobertas." },
-        { episodeNum: 4, title: "The You You Are",                    runtime: "50m", airDate: "11 Mar 2022", rating: 4.6, overview: "Mark encontra um livro de autoajuda misterioso deixado por um ex-funcionário." },
-        { episodeNum: 5, title: "The Grim Barbarity of Baird Creek",  runtime: "44m", airDate: "18 Mar 2022", rating: 4.8, overview: "A equipe de refinamento explora novas salas enquanto as tensões aumentam." },
-        { episodeNum: 6, title: "Hide and Seek",                      runtime: "46m", airDate: "25 Mar 2022", rating: 4.7, overview: "Mark e Helly tentam escapar do andar de corte enquanto Cobel interfere." },
-        { episodeNum: 7, title: "Defiant Jazz",                       runtime: "48m", airDate: "1 Abr 2022",  rating: 4.9, overview: "O grupo orquestra um plano audacioso para se conectar com o mundo externo." },
-        { episodeNum: 8, title: "What's for Dinner?",                 runtime: "47m", airDate: "8 Abr 2022",  rating: 4.8, overview: "Tensões explodem durante o Jantar dos Fundadores enquanto segredos surgem à tona." },
-        { episodeNum: 9, title: "The We We Are",                      runtime: "54m", airDate: "8 Abr 2022",  rating: 5.0, overview: "O plano é executado e revelações chocantes mudam tudo sobre o que sabíamos da Lumon." },
-      ],
-      2: [
-        { episodeNum: 1, title: "Arrive Alive",          runtime: "52m", airDate: "23 Jan 2025", rating: 4.7, overview: "Mark e Helly tentam entender as consequências das revelações de suas identidades externas." },
-        { episodeNum: 2, title: "Trojan's Horse",         runtime: "54m", airDate: "30 Jan 2025", rating: 4.8, overview: "Dylan descobre segredos chocantes sobre as operações secretas da Lumon." },
-        { episodeNum: 3, title: "The We We Are",          runtime: "50m", airDate: "6 Fev 2025",  rating: 4.9, overview: "A equipe elabora um plano arriscado para se libertar definitivamente." },
-        { episodeNum: 4, title: "Woe's Hollow",           runtime: "48m", airDate: "13 Fev 2025", rating: 4.7, overview: "Cobel endurece sua fiscalização e Mark enfrenta uma nova rodada de testes." },
-        { episodeNum: 5, title: "Sunder",                 runtime: "50m", airDate: "20 Fev 2025", rating: 4.8, overview: "A mente de Mark começa a falhar entre seus dois lados." },
-        { episodeNum: 6, title: "Attila",                 runtime: "52m", airDate: "27 Fev 2025", rating: 4.9, overview: "Um novo personagem desafia o equilíbrio frágil dentro da Lumon." },
-      ],
-    },
-    comments: [
-      { user: { name: "Lucas Melo",    avatar: AV("luke") },    comment: "Essa é a melhor série de ficção científica da década. A direção de arte é perfeita.", time: "há 2 dias", likes: 45, rating: 5 },
-      { user: { name: "Mariana Costa", avatar: AV("mariana") }, comment: "O final da primeira temporada me deixou sem respirar por horas. Genial!",             time: "há 5 dias", likes: 32, rating: 5 },
-      { user: { name: "Rafael Duarte", avatar: AV("rafael") },  comment: "A atuação do Adam Scott é subestimada. Ele carrega dois personagens com maestria.",   time: "há 1 sem", likes: 28, rating: 4 },
-    ],
-  },
-  theBear: {
-    id: "theBear",
-    originalTitle: "The Bear",
-    tagline: "Cada segundo conta.",
-    year: 2022,
-    runtime: "30 min",
-    genres: ["Drama", "Comédia"],
-    ageRating: "16+",
-    averageRating: 4.7,
-    ratingsCount: "12.2k",
-    seasonsCount: 3,
-    streamingPlatforms: [{ name: "Disney+", logoColor: "bg-[#00003c] border-[#1a1a6c]/80 text-white" }],
-    cast: [
-      { name: "Jeremy Allen White",   character: "Carmy Berzatto", avatar: AV("jeremy") },
-      { name: "Ebon Moss-Bachrach",   character: "Richard Richie", avatar: AV("ebon") },
-      { name: "Ayo Edebiri",          character: "Sydney Adamu",   avatar: AV("ayo") },
-      { name: "Lionel Boyce",         character: "Marcus Brooks",  avatar: AV("lionel") },
-    ],
-    episodes: {
-      1: [
-        { episodeNum: 1, title: "System", runtime: "28m", airDate: "23 Jun 2022", rating: 4.4, overview: "Carmy assume a lanchonete de sua família e tenta modernizar os processos antigos." },
-        { episodeNum: 2, title: "Hands",  runtime: "30m", airDate: "23 Jun 2022", rating: 4.5, overview: "A inspeção sanitária revela falhas e Carmy confronta Richie sobre sua atitude." },
-        { episodeNum: 3, title: "Right",  runtime: "27m", airDate: "30 Jun 2022", rating: 4.6, overview: "A equipe precisa fechar o dia com vendas recorde para sobreviver ao mês." },
-      ],
-      2: [
-        { episodeNum: 1, title: "Beef",     runtime: "32m", airDate: "22 Jun 2023", rating: 4.6, overview: "O plano de abrir um restaurante de alta gastronomia começa a tomar forma." },
-        { episodeNum: 2, title: "Pasta",    runtime: "30m", airDate: "22 Jun 2023", rating: 4.7, overview: "Marcus vai para Copenhague aprender com os melhores chefs do mundo." },
-        { episodeNum: 3, title: "Sundae",   runtime: "35m", airDate: "29 Jun 2023", rating: 4.5, overview: "A abertura do Bear se aproxima e cada detalhe precisa ser perfeito." },
-      ],
-      3: [
-        { episodeNum: 1, title: "Doors",     runtime: "30m", airDate: "27 Jun 2024", rating: 4.7, overview: "O restaurante abre as portas sob extrema pressão e o caos culinário domina." },
-        { episodeNum: 2, title: "Next",      runtime: "32m", airDate: "27 Jun 2024", rating: 4.6, overview: "Marcus treina novas receitas enquanto Carmy redefine o menu completo." },
-        { episodeNum: 3, title: "Thunder",   runtime: "28m", airDate: "4 Jul 2024",  rating: 4.8, overview: "Richie organiza o salão principal e Sydney lida com as críticas da mídia." },
-      ],
-    },
-    comments: [
-      { user: { name: "Thá",        avatar: AV("tha") },    comment: "A edição dessa série é uma obra de arte. Transmite a ansiedade da cozinha como nenhuma outra.", time: "há 1h",    likes: 88, rating: 5 },
-      { user: { name: "Gabi Lima",  avatar: AV("gabi") },   comment: "O episódio 'Review' da T2 é provavelmente o melhor episódio de TV já feito.",               time: "há 3 dias", likes: 61, rating: 5 },
-    ],
-  },
-  arcane: {
-    id: "arcane",
-    originalTitle: "Arcane",
-    tagline: "Toda lenda tem um começo.",
-    year: 2021,
-    runtime: "40 min",
-    genres: ["Animação", "Ação", "Fantasia"],
-    ageRating: "14+",
-    averageRating: 4.9,
-    ratingsCount: "22.5k",
-    seasonsCount: 2,
-    streamingPlatforms: [{ name: "Netflix", logoColor: "bg-red-700 border-red-800/80 text-white" }],
-    cast: [
-      { name: "Hailee Steinfeld",  character: "Vi",        avatar: AV("hailee") },
-      { name: "Ella Purnell",      character: "Jinx",      avatar: AV("ella") },
-      { name: "Kevin Alejandro",   character: "Jayce",     avatar: AV("kevin") },
-      { name: "Reed Shannon",      character: "Ekko",      avatar: AV("reed") },
-    ],
-    episodes: {
-      1: [
-        { episodeNum: 1, title: "Welcome to the Playground",                     runtime: "40m", airDate: "6 Nov 2021",  rating: 4.6, overview: "Duas irmãs órfãs causam confusão nas ruas de Piltover após um roubo misterioso." },
-        { episodeNum: 2, title: "Some Mysteries Are Better Left Unsolved",        runtime: "39m", airDate: "6 Nov 2021",  rating: 4.7, overview: "Jayce tenta defender suas pesquisas de magia científica no conselho acadêmico." },
-        { episodeNum: 3, title: "The Base Violence Necessary for Change",         runtime: "44m", airDate: "6 Nov 2021",  rating: 4.9, overview: "O trágico destino separa Vi e Powder após o ataque ao laboratório subterrâneo." },
-        { episodeNum: 4, title: "Happy Progress Day",                             runtime: "38m", airDate: "13 Nov 2021", rating: 4.8, overview: "Anos depois, Vi está presa enquanto Jinx semeia o caos em Piltover." },
-        { episodeNum: 5, title: "Everybody Wants to Be My Enemy",                runtime: "41m", airDate: "13 Nov 2021", rating: 4.7, overview: "Vi e Jinx se reúnem em circunstâncias devastadoras." },
-        { episodeNum: 6, title: "When These Walls Come Tumbling Down",           runtime: "43m", airDate: "13 Nov 2021", rating: 4.8, overview: "O conselho de Piltover tenta contornar a ameaça crescente de Zaun." },
-        { episodeNum: 7, title: "The Boy Saviour",                               runtime: "39m", airDate: "20 Nov 2021", rating: 4.6, overview: "Ekko confronta Jinx em uma batalha carregada de emoção e nostalgia." },
-        { episodeNum: 8, title: "Oil and Water",                                 runtime: "40m", airDate: "20 Nov 2021", rating: 4.7, overview: "Caitlyn e Vi precisam superar suas diferenças em busca de aliados." },
-        { episodeNum: 9, title: "The Monster You Created",                       runtime: "48m", airDate: "20 Nov 2021", rating: 5.0, overview: "O destino de Piltover e Zaun é selado em uma conclusão épica e devastadora." },
-      ],
-      2: [
-        { episodeNum: 1, title: "Heavy is the Crown",  runtime: "42m", airDate: "9 Nov 2024",  rating: 4.8, overview: "Vi e Jinx tomam caminhos opostos enquanto a guerra entre as duas cidades eclode." },
-        { episodeNum: 2, title: "Some Mysteries…",     runtime: "44m", airDate: "9 Nov 2024",  rating: 4.7, overview: "Jinx lidera uma milícia enquanto os conselhos decidem o futuro de Piltover." },
-        { episodeNum: 3, title: "Guns and Gossip",     runtime: "43m", airDate: "16 Nov 2024", rating: 4.9, overview: "O confronto final entre irmãs se torna inevitável." },
-      ],
-    },
-    comments: [
-      { user: { name: "Pedro F.",    avatar: AV("pedro") },  comment: "Visualmente o maior feito da animação mundial. Trilha sonora impecável.", time: "há 3 dias", likes: 104, rating: 5 },
-      { user: { name: "Alice R.",    avatar: AV("alice") },  comment: "Não consigo acreditar que uma série baseada em game seja tão emocionante.", time: "há 1 sem",  likes: 78,  rating: 5 },
-    ],
-  },
-};
-
-function getSeriesDetails(id: string, baseTitle?: Title): SeriesDetails {
-  if (SERIES_DB[id]) return SERIES_DB[id];
-  const title = baseTitle ?? TITLES[id];
-
-  return {
-    id,
-    tagline: "Uma série original aclamada pelo público e crítica.",
-    year: title?.year ?? 2023,
-    runtime: "45 min",
-    genres: ["Drama", "Mistério"],
-    ageRating: "16+",
-    averageRating: 4.6,
-    ratingsCount: "2.4k",
-    seasonsCount: 2,
-    streamingPlatforms: [
-      { name: "Netflix",      logoColor: "bg-red-700 border-red-800/80 text-white" },
-      { name: "Prime Video",  logoColor: "bg-blue-800 border-blue-900/80 text-white" },
-    ],
-    cast: [
-      { name: "Ator Principal",    character: "Protagonista", avatar: AV("cast1") },
-      { name: "Ator Coadjuvante",  character: "Parceiro",     avatar: AV("cast2") },
-    ],
-    episodes: {
-      1: [
-        { episodeNum: 1, title: "Piloto",          runtime: "45m", airDate: "01 Out 2023", rating: 4.4, overview: "Introdução dos personagens centrais e conflito inicial." },
-        { episodeNum: 2, title: "O Desdobramento", runtime: "43m", airDate: "08 Out 2023", rating: 4.5, overview: "A trama se complica com novas pistas reveladas." },
-        { episodeNum: 3, title: "Revelações",      runtime: "46m", airDate: "15 Out 2023", rating: 4.6, overview: "O passado dos personagens começa a se revelar de forma surpreendente." },
-      ],
-      2: [
-        { episodeNum: 1, title: "Nova Temporada",  runtime: "46m", airDate: "12 Set 2024", rating: 4.6, overview: "Novas intrigas começam após as consequências do final da temporada." },
-        { episodeNum: 2, title: "O Retorno",       runtime: "44m", airDate: "19 Set 2024", rating: 4.5, overview: "Os personagens encaram as consequências de suas escolhas." },
-      ],
-    },
-    comments: [
-      { user: { name: "Cinéfilo Scena", avatar: AV("cin") }, comment: "Muito boa produção, vale a pena maratonar no final de semana.", time: "há 1 semana", likes: 12, rating: 4 },
-    ],
-  };
-}
-
-// ─── Main Page Component ──────────────────────────────────────────────────────
-
 function SeriesDetailsPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
 
-  const titleBase = TITLES[id];
-  const details = useMemo(() => getSeriesDetails(id, titleBase), [id, titleBase]);
+  const currentUser = userService.getCurrentUser();
+  const titleBase = seriesService.getSeries(id);
+  const details = useMemo(() => seriesService.getSeriesDetails(id), [id]);
 
   // ── State ──
   const [status, setStatus] = useState<WatchStatus>(() => {
-    const isWatching = WATCHING.some((w) => w.title.id === id);
-    return isWatching ? "watching" : "want";
+    return seriesService.isWatching(id) ? "watching" : "want";
   });
   const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -323,7 +104,7 @@ function SeriesDetailsPage() {
 
   const [watchedEpisodes, setWatchedEpisodes] = useState<Record<string, boolean>>(() => {
     const map: Record<string, boolean> = {};
-    const watchingItem = WATCHING.find((w) => w.title.id === id);
+    const watchingItem = seriesService.getWatchingBySeriesId(id);
     const limit = watchingItem ? watchingItem.watchedEpisodes : 0;
     let count = 0;
     Object.entries(details.episodes).forEach(([sNum, eps]) => {
@@ -1269,3 +1050,4 @@ export function StatusBottomSheet({
     </div>
   );
 }
+
