@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Clock, Search as SearchIcon, TrendingUp, X } from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
 import { MediaCard, titleToMedia } from "@/components/scena/MediaCard";
