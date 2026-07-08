@@ -1,5 +1,11 @@
 import { WATCHING } from "@/lib/scena-data";
 import { mediaService } from "./media.service";
+import { tmdbClient } from "./tmdb/tmdb.client";
+import {
+  mapTmdbToSeriesDetails,
+  mapTmdbTvToSeries,
+  parseTmdbId,
+} from "./tmdb/tmdb.mapper";
 import type {
   MediaTitle,
   RecentlyReleased,
