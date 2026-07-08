@@ -343,4 +343,45 @@ export const seriesService = {
   getRecentlyReleased(): RecentlyReleased[] {
     return RECENTLY_RELEASED;
   },
+
+  // ── Async TMDb-backed variants ─────────────────────────────────────────────
+
+  async getSeriesAsync(id: string): Promise<Series | undefined> {
+    const parsed = parseTmdbId(id);
+    if (!parsed || parsed.kind !== "tv" || !tmdbClient.hasKey()) {
+      return this.getSeries(id);
+    }
+    const details = await tmdbClient.tvDetails(parsed.tmdbId);
+    return details ? mapTmdbTvToSeries(details) : this.getSeries(id);
+  },
+
+  async getSeriesDetailsAsync(id: string): Promise<SeriesDetails> {
+    const parsed = parseTmdbId(id);
+    if (!parsed || parsed.kind !== "tv" || !tmdbClient.hasKey()) {
+      return this.getSeriesDetails(id);
+    }
+    const details = await tmdbClient.tvDetails(parsed.tmdbId);
+    if (!details) return this.getSeriesDetails(id);
+
+    const validSeasons = (details.seasons ?? []).filter((s) => s.season_number > 0);
+    const [seasons, credits, providers] = await Promise.all([
+      Promise.all(
+        validSeasons.map((s) => tmdbClient.tvSeason(parsed.tmdbId, s.season_number)),
+      ).then((arr) => arr.filter(Boolean) as NonNullable<Awaited<ReturnType<typeof tmdbClient.tvSeason>>>[]),
+      tmdbClient.tvCredits(parsed.tmdbId),
+      tmdbClient.tvWatchProviders(parsed.tmdbId),
+    ]);
+
+    return mapTmdbToSeriesDetails({ details, seasons, credits, providers });
+  },
+
+  async getSimilarSeriesAsync(id: string): Promise<Series[]> {
+    const parsed = parseTmdbId(id);
+    if (!parsed || parsed.kind !== "tv" || !tmdbClient.hasKey()) {
+      return this.getSimilarSeries(id);
+    }
+    const recs = await tmdbClient.tvRecommendations(parsed.tmdbId);
+    if (!recs?.results?.length) return this.getSimilarSeries(id);
+    return recs.results.slice(0, 12).map(mapTmdbTvToSeries);
+  },
 };
