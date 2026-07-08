@@ -83,6 +83,8 @@ function SeriesDetailsPage() {
   const navigate = useNavigate();
 
   const currentUser = userService.getCurrentUser();
+  const PROFILE = userService.getProfile();
+  const ALL_TITLES = mediaService.getAllMedia();
   const titleBase = seriesService.getSeries(id);
   const details = useMemo(() => seriesService.getSeriesDetails(id), [id]);
 
