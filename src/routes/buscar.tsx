@@ -65,8 +65,16 @@ function BuscarPage() {
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length > 0;
 
-  const groupedResults = useMemo(() => {
-    return searchService.search(trimmedQuery);
+  const [groupedResults, setGroupedResults] = useState(() => searchService.search(""));
+
+  useEffect(() => {
+    let cancelled = false;
+    searchService.searchAsync(trimmedQuery).then((res) => {
+      if (!cancelled) setGroupedResults(res);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [trimmedQuery]);
 
   const visibleSections = getVisibleSections(filter, groupedResults);
