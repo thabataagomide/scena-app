@@ -580,7 +580,7 @@ function SeriesDetailsPage() {
 
           {/* Comment input */}
           <form onSubmit={handlePostComment} className="flex gap-3 mb-6 items-start">
-            <img src={PROFILE.avatar} alt={PROFILE.name} className="h-8 w-8 rounded-full border border-border object-cover shrink-0 mt-0.5" />
+            <img src={PROFILE.avatar} alt={PROFILE.displayName} className="h-8 w-8 rounded-full border border-border object-cover shrink-0 mt-0.5" />
             <div className="flex-1">
               <textarea
                 value={newCommentText}
