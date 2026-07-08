@@ -11,7 +11,6 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-
 function HomePage() {
   const [tab, setTab] = useState<"feed" | "novidades">("feed");
 
@@ -69,18 +68,13 @@ function Tabs<T extends string>({
   );
 }
 
-
 function FeedList() {
   const feed = mediaService.getFeed();
 
   return (
     <div className="space-y-5">
       {feed.map((item, i) => (
-        <div
-          key={item.id}
-          className="animate-rise"
-          style={{ animationDelay: `${i * 60}ms` }}
-        >
+        <div key={item.id} className="animate-rise" style={{ animationDelay: `${i * 60}ms` }}>
           <FeedCard item={item} />
         </div>
       ))}
@@ -150,9 +144,7 @@ function FeedCard({ item }: { item: FeedItem }) {
                     key={i}
                     className={cn(
                       "h-[15px] w-[15px]",
-                      i < item.rating!
-                        ? "fill-accent text-accent"
-                        : "text-muted-foreground/30",
+                      i < item.rating! ? "fill-accent text-accent" : "text-muted-foreground/30",
                     )}
                     strokeWidth={1.4}
                   />
@@ -191,7 +183,6 @@ function FeedCard({ item }: { item: FeedItem }) {
     </article>
   );
 }
-
 
 function Novidades() {
   const upcoming = mediaService.getUpcoming();

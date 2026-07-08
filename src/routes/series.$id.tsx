@@ -65,16 +65,56 @@ export const Route = createFileRoute("/series/$id")({
 // Scena contracts, not to mock, TMDb, or Supabase response shapes.
 // ─── Status Meta ──────────────────────────────────────────────────────────────
 
-export const STATUS_META: Record<WatchStatus, { label: string; dot: string; color: string; desc: string }> = {
-  want:      { label: "Quero Assistir", dot: "bg-muted-foreground/60",  color: "text-muted-foreground",   desc: "Adicionado à sua lista de desejos" },
-  watching:  { label: "Assistindo",     dot: "bg-accent",               color: "text-accent",             desc: "Em progresso — continue de onde parou" },
-  uptodate:  { label: "Em Dia",         dot: "bg-emerald-400",          color: "text-emerald-400",        desc: "Você viu todos os episódios lançados" },
-  finished:  { label: "Finalizado",     dot: "bg-foreground/50",        color: "text-foreground/70",      desc: "Série concluída" },
-  paused:    { label: "Pausado",        dot: "bg-amber-400",            color: "text-amber-400",          desc: "Você pausou temporariamente" },
-  abandoned: { label: "Abandonado",     dot: "bg-red-400/70",           color: "text-red-400",            desc: "Você parou de assistir" },
+export const STATUS_META: Record<
+  WatchStatus,
+  { label: string; dot: string; color: string; desc: string }
+> = {
+  want: {
+    label: "Quero Assistir",
+    dot: "bg-muted-foreground/60",
+    color: "text-muted-foreground",
+    desc: "Adicionado à sua lista de desejos",
+  },
+  watching: {
+    label: "Assistindo",
+    dot: "bg-accent",
+    color: "text-accent",
+    desc: "Em progresso — continue de onde parou",
+  },
+  uptodate: {
+    label: "Em Dia",
+    dot: "bg-emerald-400",
+    color: "text-emerald-400",
+    desc: "Você viu todos os episódios lançados",
+  },
+  finished: {
+    label: "Finalizado",
+    dot: "bg-foreground/50",
+    color: "text-foreground/70",
+    desc: "Série concluída",
+  },
+  paused: {
+    label: "Pausado",
+    dot: "bg-amber-400",
+    color: "text-amber-400",
+    desc: "Você pausou temporariamente",
+  },
+  abandoned: {
+    label: "Abandonado",
+    dot: "bg-red-400/70",
+    color: "text-red-400",
+    desc: "Você parou de assistir",
+  },
 };
 
-const STATUS_ORDER: WatchStatus[] = ["want", "watching", "uptodate", "finished", "paused", "abandoned"];
+const STATUS_ORDER: WatchStatus[] = [
+  "want",
+  "watching",
+  "uptodate",
+  "finished",
+  "paused",
+  "abandoned",
+];
 
 // ─── Mock Database ────────────────────────────────────────────────────────────
 
@@ -84,9 +124,27 @@ function SeriesDetailsPage() {
 
   const currentUser = userService.getCurrentUser();
   const PROFILE = userService.getProfile();
-  const ALL_TITLES = mediaService.getAllMedia();
-  const titleBase = seriesService.getSeries(id);
-  const details = useMemo(() => seriesService.getSeriesDetails(id), [id]);
+  const [titleBase, setTitleBase] = useState(() => seriesService.getSeries(id));
+  const [details, setDetails] = useState<SeriesDetails>(() => seriesService.getSeriesDetails(id));
+  const [similarTitles, setSimilarTitles] = useState(() =>
+    mediaService.getAllMedia().filter((t) => t.kind === "series" && t.id !== id),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    seriesService.getSeriesAsync(id).then((s) => {
+      if (!cancelled && s) setTitleBase(s);
+    });
+    seriesService.getSeriesDetailsAsync(id).then((d) => {
+      if (!cancelled) setDetails(d);
+    });
+    seriesService.getSimilarSeriesAsync(id).then((sims) => {
+      if (!cancelled) setSimilarTitles(sims.filter((t) => t.id !== id));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   // ── State ──
   const [status, setStatus] = useState<WatchStatus>(() => {
@@ -121,7 +179,7 @@ function SeriesDetailsPage() {
 
   const watchedCount = useMemo(
     () => Object.values(watchedEpisodes).filter(Boolean).length,
-    [watchedEpisodes]
+    [watchedEpisodes],
   );
   const progressPercent = Math.round((watchedCount / totalEpisodesCount) * 100);
 
@@ -141,7 +199,9 @@ function SeriesDetailsPage() {
   // ── Lock body scroll when sheet is open ──
   useEffect(() => {
     document.body.style.overflow = showStatusSheet ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [showStatusSheet]);
 
   // ── Handlers ──
@@ -159,7 +219,9 @@ function SeriesDetailsPage() {
       });
       if (newCount === totalEpisodesCount) {
         setStatus("finished");
-        toast.success("Série concluída! 🎉", { description: `Todos os ${totalEpisodesCount} episódios assistidos.` });
+        toast.success("Série concluída! 🎉", {
+          description: `Todos os ${totalEpisodesCount} episódios assistidos.`,
+        });
       } else if (newCount === Object.values(details.episodes).flat().length) {
         setStatus("uptodate");
         toast.success("Em dia! ✨", { description: "Você viu todos os episódios disponíveis." });
@@ -182,7 +244,9 @@ function SeriesDetailsPage() {
     if (newStatus === "finished") {
       const fullMap: Record<string, boolean> = {};
       Object.entries(details.episodes).forEach(([sNum, eps]) =>
-        eps.forEach((ep) => { fullMap[`${sNum}-${ep.episodeNum}`] = true; })
+        eps.forEach((ep) => {
+          fullMap[`${sNum}-${ep.episodeNum}`] = true;
+        }),
       );
       setWatchedEpisodes(fullMap);
       toast.success("Série marcada como concluída! 🎉");
@@ -198,13 +262,15 @@ function SeriesDetailsPage() {
     const next = !isFavorited;
     setIsFavorited(next);
     toast[next ? "success" : "info"](
-      next ? `Favoritado: ${titleBase?.title}` : "Removido dos favoritos"
+      next ? `Favoritado: ${titleBase?.title}` : "Removido dos favoritos",
     );
   };
 
   const handleShare = () => {
     if (navigator.share) {
-      navigator.share({ title: titleBase?.title, text: details.tagline, url: window.location.href }).catch(() => {});
+      navigator
+        .share({ title: titleBase?.title, text: details.tagline, url: window.location.href })
+        .catch(() => {});
     } else {
       navigator.clipboard.writeText(window.location.href);
       toast.success("Link copiado!");
@@ -215,7 +281,13 @@ function SeriesDetailsPage() {
     e.preventDefault();
     if (!newCommentText.trim()) return;
     setCommentsList((prev) => [
-      { user: { name: PROFILE.displayName, avatar: PROFILE.avatar }, comment: newCommentText, time: "Agora mesmo", likes: 0, rating: userRating || undefined },
+      {
+        user: { name: PROFILE.displayName, avatar: PROFILE.avatar },
+        comment: newCommentText,
+        time: "Agora mesmo",
+        likes: 0,
+        rating: userRating || undefined,
+      },
       ...prev,
     ]);
     setNewCommentText("");
@@ -223,15 +295,15 @@ function SeriesDetailsPage() {
   };
 
   const sortedComments = useMemo(() => {
-    return [...commentsList].sort((a, b) => sortOrder === "likes" ? b.likes - a.likes : 0);
+    return [...commentsList].sort((a, b) => (sortOrder === "likes" ? b.likes - a.likes : 0));
   }, [commentsList, sortOrder]);
 
   const activeEpisodes = details.episodes[selectedSeason] ?? [];
   const statusMeta = STATUS_META[status];
-  const similarTitles = ALL_TITLES.filter((t) => t.kind === "series" && t.id !== id);
 
-  const backdropSrc = titleBase?.backdrop ?? "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg";
-  const posterSrc   = titleBase?.poster ?? titleBase?.backdrop;
+  const backdropSrc =
+    titleBase?.backdrop ?? "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg";
+  const posterSrc = titleBase?.poster ?? titleBase?.backdrop;
 
   return (
     <>
@@ -283,9 +355,13 @@ function SeriesDetailsPage() {
                     Série
                   </span>
                   <span className="text-[10px] text-muted-foreground">·</span>
-                  <span className="text-[10px] text-muted-foreground font-medium">{details.year}</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">
+                    {details.year}
+                  </span>
                   <span className="text-[10px] text-muted-foreground">·</span>
-                  <span className="text-[9.5px] border border-border text-muted-foreground px-1.5 py-0.3 rounded font-semibold">{details.ageRating}</span>
+                  <span className="text-[9.5px] border border-border text-muted-foreground px-1.5 py-0.3 rounded font-semibold">
+                    {details.ageRating}
+                  </span>
                 </div>
 
                 {/* Title */}
@@ -304,13 +380,18 @@ function SeriesDetailsPage() {
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10.5px] text-muted-foreground mb-2.5">
                   <span>{details.runtime} por ep.</span>
                   <span>·</span>
-                  <span>{details.seasonsCount} {details.seasonsCount === 1 ? "Temporada" : "Temporadas"}</span>
+                  <span>
+                    {details.seasonsCount} {details.seasonsCount === 1 ? "Temporada" : "Temporadas"}
+                  </span>
                 </div>
 
                 {/* Genres */}
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {details.genres.map((g) => (
-                    <span key={g} className="text-[9.5px] font-medium px-2 py-0.5 rounded-full bg-white/6 border border-white/10 text-foreground/70">
+                    <span
+                      key={g}
+                      className="text-[9.5px] font-medium px-2 py-0.5 rounded-full bg-white/6 border border-white/10 text-foreground/70"
+                    >
                       {g}
                     </span>
                   ))}
@@ -354,9 +435,14 @@ function SeriesDetailsPage() {
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-accent text-accent-foreground font-bold text-[13px] py-3.5 shadow-[0_8px_30px_rgba(216,190,132,0.25)] active:scale-95 hover:scale-[1.01] transition-all duration-200 cursor-pointer"
           >
             {status === "want" ? (
-              <><Tv className="h-4 w-4" strokeWidth={1.8} /> Começar a Assistir</>
+              <>
+                <Tv className="h-4 w-4" strokeWidth={1.8} /> Começar a Assistir
+              </>
             ) : (
-              <><Play className="h-4 w-4 fill-current ml-0.5" strokeWidth={0} /> Continuar Assistindo</>
+              <>
+                <Play className="h-4 w-4 fill-current ml-0.5" strokeWidth={0} /> Continuar
+                Assistindo
+              </>
             )}
           </button>
 
@@ -375,7 +461,10 @@ function SeriesDetailsPage() {
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {/* SECTION 3 — Watch Progress Dashboard                                */}
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {(status === "watching" || status === "uptodate" || status === "finished" || watchedCount > 0) && (
+        {(status === "watching" ||
+          status === "uptodate" ||
+          status === "finished" ||
+          watchedCount > 0) && (
           <ProgressSection
             watchedCount={watchedCount}
             totalCount={totalEpisodesCount}
@@ -392,7 +481,9 @@ function SeriesDetailsPage() {
           <div className="flex items-center justify-around rounded-3xl border border-border bg-card/40 p-4">
             {/* Favorite */}
             <QuickAction
-              icon={<Heart className={cn("h-5 w-5", isFavorited && "fill-current")} strokeWidth={1.6} />}
+              icon={
+                <Heart className={cn("h-5 w-5", isFavorited && "fill-current")} strokeWidth={1.6} />
+              }
               label="Favorito"
               onClick={toggleFavorite}
               active={isFavorited}
@@ -403,7 +494,9 @@ function SeriesDetailsPage() {
             <QuickAction
               icon={<Plus className="h-5 w-5" strokeWidth={1.6} />}
               label="Na Lista"
-              onClick={() => toast.success("Adicionado à sua lista!", { description: titleBase?.title })}
+              onClick={() =>
+                toast.success("Adicionado à sua lista!", { description: titleBase?.title })
+              }
             />
 
             {/* Rate */}
@@ -420,13 +513,20 @@ function SeriesDetailsPage() {
                     aria-label={`Avaliar ${s} estrelas`}
                   >
                     <Star
-                      className={cn("h-3.5 w-3.5 transition-colors duration-200", s <= userRating ? "text-accent fill-current" : "text-muted-foreground/30 hover:text-accent/60")}
+                      className={cn(
+                        "h-3.5 w-3.5 transition-colors duration-200",
+                        s <= userRating
+                          ? "text-accent fill-current"
+                          : "text-muted-foreground/30 hover:text-accent/60",
+                      )}
                       strokeWidth={1.4}
                     />
                   </button>
                 ))}
               </div>
-              <span className="text-[10px] font-medium text-muted-foreground tracking-wide select-none">Avaliar</span>
+              <span className="text-[10px] font-medium text-muted-foreground tracking-wide select-none">
+                Avaliar
+              </span>
             </div>
 
             {/* Share */}
@@ -470,7 +570,12 @@ function SeriesDetailsPage() {
             title="Episódios"
             action={
               <span className="text-[11px] text-muted-foreground font-medium">
-                {activeEpisodes.filter((ep) => watchedEpisodes[`${selectedSeason}-${ep.episodeNum}`]).length}/{activeEpisodes.length} vistos
+                {
+                  activeEpisodes.filter(
+                    (ep) => watchedEpisodes[`${selectedSeason}-${ep.episodeNum}`],
+                  ).length
+                }
+                /{activeEpisodes.length} vistos
               </span>
             }
           />
@@ -484,9 +589,11 @@ function SeriesDetailsPage() {
               Array.from({ length: details.seasonsCount }, (_, i) => {
                 const sNum = i + 1;
                 const eps = details.episodes[sNum] ?? [];
-                const watched = eps.filter((ep) => watchedEpisodes[`${sNum}-${ep.episodeNum}`]).length;
+                const watched = eps.filter(
+                  (ep) => watchedEpisodes[`${sNum}-${ep.episodeNum}`],
+                ).length;
                 return [sNum, { watched, total: eps.length }];
-              })
+              }),
             )}
           />
 
@@ -541,11 +648,16 @@ function SeriesDetailsPage() {
           <div className="grid grid-cols-3 gap-px bg-border rounded-3xl overflow-hidden border border-border">
             {[
               { value: details.averageRating, label: "Comunidade", gold: false },
-              { value: userRating ? `${userRating}.0` : "—",       label: "Sua nota",    gold: true  },
-              { value: "94%",                                        label: "Recomendam",  gold: false },
+              { value: userRating ? `${userRating}.0` : "—", label: "Sua nota", gold: true },
+              { value: "94%", label: "Recomendam", gold: false },
             ].map((stat) => (
               <div key={stat.label} className="bg-card/60 px-4 py-5 text-center">
-                <div className={cn("text-[24px] font-black leading-none", stat.gold ? "text-accent" : "text-foreground")}>
+                <div
+                  className={cn(
+                    "text-[24px] font-black leading-none",
+                    stat.gold ? "text-accent" : "text-foreground",
+                  )}
+                >
                   {stat.value}
                 </div>
                 <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mt-2">
@@ -569,7 +681,9 @@ function SeriesDetailsPage() {
                   onClick={() => setSortOrder(o)}
                   className={cn(
                     "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer",
-                    sortOrder === o ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+                    sortOrder === o
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {o === "likes" ? "Curtidos" : "Recentes"}
@@ -580,7 +694,11 @@ function SeriesDetailsPage() {
 
           {/* Comment input */}
           <form onSubmit={handlePostComment} className="flex gap-3 mb-6 items-start">
-            <img src={PROFILE.avatar} alt={PROFILE.displayName} className="h-8 w-8 rounded-full border border-border object-cover shrink-0 mt-0.5" />
+            <img
+              src={PROFILE.avatar}
+              alt={PROFILE.displayName}
+              className="h-8 w-8 rounded-full border border-border object-cover shrink-0 mt-0.5"
+            />
             <div className="flex-1">
               <textarea
                 value={newCommentText}
@@ -604,15 +722,25 @@ function SeriesDetailsPage() {
           {/* Comments list */}
           <div className="space-y-5">
             {sortedComments.map((com, idx) => (
-              <div key={idx} className="flex gap-3.5 border-b border-border/30 pb-5 last:border-0 last:pb-0">
-                <img src={com.user.avatar} alt={com.user.name} className="h-8 w-8 rounded-full border border-border object-cover shrink-0" />
+              <div
+                key={idx}
+                className="flex gap-3.5 border-b border-border/30 pb-5 last:border-0 last:pb-0"
+              >
+                <img
+                  src={com.user.avatar}
+                  alt={com.user.name}
+                  className="h-8 w-8 rounded-full border border-border object-cover shrink-0"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-[12.5px] font-semibold text-foreground">{com.user.name}</span>
+                      <span className="text-[12.5px] font-semibold text-foreground">
+                        {com.user.name}
+                      </span>
                       {com.rating && (
                         <span className="inline-flex items-center gap-0.5 text-accent text-[9.5px] font-bold bg-accent/12 border border-accent/20 px-1.5 py-0.5 rounded-full">
-                          <Star className="h-2.5 w-2.5 fill-current" strokeWidth={0} /> {com.rating}.0
+                          <Star className="h-2.5 w-2.5 fill-current" strokeWidth={0} /> {com.rating}
+                          .0
                         </span>
                       )}
                     </div>
@@ -622,7 +750,7 @@ function SeriesDetailsPage() {
                   <button
                     onClick={() =>
                       setCommentsList((prev) =>
-                        prev.map((c, i) => i === idx ? { ...c, likes: c.likes + 1 } : c)
+                        prev.map((c, i) => (i === idx ? { ...c, likes: c.likes + 1 } : c)),
                       )
                     }
                     className="mt-2 text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer active:scale-95"
@@ -679,7 +807,11 @@ export function ProgressSection({
               Seu Progresso
             </div>
             <h3 className="text-[15px] font-bold text-foreground leading-tight">
-              {status === "finished" ? "Série Concluída ✓" : status === "uptodate" ? "Em Dia ✨" : "Em andamento"}
+              {status === "finished"
+                ? "Série Concluída ✓"
+                : status === "uptodate"
+                  ? "Em Dia ✨"
+                  : "Em andamento"}
             </h3>
           </div>
           <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/15 px-2.5 py-1 rounded-full text-[10px] font-bold text-amber-400 uppercase tracking-wide">
@@ -691,14 +823,12 @@ export function ProgressSection({
         {/* Stats grid */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           {[
-            { val: watchedCount,  label: "Vistos"     },
-            { val: remaining > 0 ? remaining : "—", label: "Restantes"  },
-            { val: `${progressPercent}%`,            label: "Progresso"  },
+            { val: watchedCount, label: "Vistos" },
+            { val: remaining > 0 ? remaining : "—", label: "Restantes" },
+            { val: `${progressPercent}%`, label: "Progresso" },
           ].map((s) => (
             <div key={s.label} className="rounded-2xl bg-secondary/60 px-3 py-3 text-center">
-              <div className="text-[18px] font-extrabold text-foreground leading-none">
-                {s.val}
-              </div>
+              <div className="text-[18px] font-extrabold text-foreground leading-none">{s.val}</div>
               <div className="text-[9.5px] uppercase tracking-wider text-muted-foreground mt-1">
                 {s.label}
               </div>
@@ -720,7 +850,9 @@ export function ProgressSection({
         {currentEpisodeLabel !== "Todos assistidos" && (
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             <Play className="h-3 w-3 text-accent shrink-0" strokeWidth={0} fill="currentColor" />
-            <span>Próximo: <span className="text-foreground/80 font-medium">{currentEpisodeLabel}</span></span>
+            <span>
+              Próximo: <span className="text-foreground/80 font-medium">{currentEpisodeLabel}</span>
+            </span>
           </div>
         )}
       </div>
@@ -754,17 +886,18 @@ export function SeasonTabs({
             onClick={() => onSelect(sNum)}
             className={cn(
               "relative flex items-center gap-1.5 py-3 px-4 text-[12.5px] font-bold tracking-wide shrink-0 cursor-pointer transition-colors duration-200 whitespace-nowrap",
-              active ? "text-foreground" : "text-muted-foreground/60 hover:text-muted-foreground"
+              active ? "text-foreground" : "text-muted-foreground/60 hover:text-muted-foreground",
             )}
           >
-            {allWatched && (
-              <Check className="h-3 w-3 text-emerald-400 shrink-0" strokeWidth={3} />
-            )}
+            {allWatched && <Check className="h-3 w-3 text-emerald-400 shrink-0" strokeWidth={3} />}
             Temporada {sNum}
             {season && (
-              <span className={cn("text-[9px] font-semibold rounded-full px-1.5 py-0.2",
-                allWatched ? "text-emerald-400/80" : "text-muted-foreground/50"
-              )}>
+              <span
+                className={cn(
+                  "text-[9px] font-semibold rounded-full px-1.5 py-0.2",
+                  allWatched ? "text-emerald-400/80" : "text-muted-foreground/50",
+                )}
+              >
                 {season.watched}/{season.total}
               </span>
             )}
@@ -799,7 +932,7 @@ export function EpisodeCard({
     <div
       className={cn(
         "rounded-2xl border bg-card/40 overflow-hidden transition-all duration-300",
-        isWatched ? "border-emerald-500/15 bg-emerald-500/[0.02]" : "border-border"
+        isWatched ? "border-emerald-500/15 bg-emerald-500/[0.02]" : "border-border",
       )}
     >
       <div className="flex gap-3.5 p-3">
@@ -815,10 +948,14 @@ export function EpisodeCard({
             className="h-full w-full object-cover opacity-55 transition-opacity duration-300 group-hover/thumb:opacity-70"
           />
           {/* Overlay */}
-          <div className={cn(
-            "absolute inset-0 flex items-center justify-center transition-all duration-300",
-            isWatched ? "bg-emerald-500/20" : "bg-black/30 opacity-0 group-hover/thumb:opacity-100"
-          )}>
+          <div
+            className={cn(
+              "absolute inset-0 flex items-center justify-center transition-all duration-300",
+              isWatched
+                ? "bg-emerald-500/20"
+                : "bg-black/30 opacity-0 group-hover/thumb:opacity-100",
+            )}
+          >
             {isWatched ? (
               <Check className="h-5 w-5 text-emerald-400" strokeWidth={3} />
             ) : (
@@ -839,10 +976,12 @@ export function EpisodeCard({
         {/* Info */}
         <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
           <div>
-            <h4 className={cn(
-              "text-[13.5px] font-bold leading-tight truncate transition-colors duration-200",
-              isWatched ? "text-foreground/60" : "text-foreground"
-            )}>
+            <h4
+              className={cn(
+                "text-[13.5px] font-bold leading-tight truncate transition-colors duration-200",
+                isWatched ? "text-foreground/60" : "text-foreground",
+              )}
+            >
               {episode.title}
             </h4>
             <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground">
@@ -872,7 +1011,7 @@ export function EpisodeCard({
                 "flex h-7 items-center gap-1.5 rounded-xl border px-2.5 text-[10.5px] font-bold transition-all duration-200 active:scale-90 cursor-pointer",
                 isWatched
                   ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                  : "border-border text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  : "border-border text-muted-foreground hover:text-foreground hover:bg-white/5",
               )}
               aria-label={isWatched ? "Desmarcar" : "Marcar como visto"}
             >
@@ -902,7 +1041,7 @@ export function PlatformChip({ platform }: { platform: StreamingPlatform }) {
     <div
       className={cn(
         "flex items-center gap-2 px-4 py-2.5 rounded-2xl border font-bold text-[12.5px] tracking-wide transition-transform duration-200 active:scale-95 cursor-default select-none",
-        platform.logoColor
+        platform.logoColor,
       )}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
@@ -921,11 +1060,7 @@ export function CastCard({ actor }: { actor: CastMember }) {
       aria-label={`Ver ${actor.name}`}
     >
       <div className="relative mx-auto h-14 w-14 rounded-full overflow-hidden border border-border bg-surface-2 transition-transform duration-300 group-hover:scale-105">
-        <img
-          src={actor.avatar}
-          alt={actor.name}
-          className="h-full w-full object-cover"
-        />
+        <img src={actor.avatar} alt={actor.name} className="h-full w-full object-cover" />
         {/* Subtle shine ring on hover */}
         <div className="absolute inset-0 rounded-full ring-0 group-hover:ring-1 group-hover:ring-accent/30 transition-all duration-300" />
       </div>
@@ -959,7 +1094,7 @@ function QuickAction({
       onClick={onClick}
       className={cn(
         "flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-white/5 active:scale-95 transition-all cursor-pointer flex-1",
-        active ? activeClass : "text-muted-foreground hover:text-foreground"
+        active ? activeClass : "text-muted-foreground hover:text-foreground",
       )}
     >
       {icon}
@@ -984,7 +1119,12 @@ export function StatusBottomSheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal aria-label="Alterar status">
+    <div
+      className="fixed inset-0 z-50 flex flex-col justify-end"
+      role="dialog"
+      aria-modal
+      aria-label="Alterar status"
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in"
@@ -999,8 +1139,12 @@ export function StatusBottomSheet({
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Alterar status</div>
-            <h2 className="text-[17px] font-bold text-foreground tracking-tight">Como você está?</h2>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-0.5">
+              Alterar status
+            </div>
+            <h2 className="text-[17px] font-bold text-foreground tracking-tight">
+              Como você está?
+            </h2>
           </div>
           <button
             onClick={onDismiss}
@@ -1024,12 +1168,17 @@ export function StatusBottomSheet({
                   "w-full flex items-center gap-4 rounded-2xl border px-4 py-3.5 text-left transition-all duration-200 active:scale-[0.98] cursor-pointer",
                   isActive
                     ? "border-accent/30 bg-accent/8"
-                    : "border-border/50 bg-secondary/40 hover:bg-secondary/70"
+                    : "border-border/50 bg-secondary/40 hover:bg-secondary/70",
                 )}
               >
                 <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", meta.dot)} />
                 <div className="flex-1 min-w-0">
-                  <div className={cn("text-[13.5px] font-bold", isActive ? meta.color : "text-foreground")}>
+                  <div
+                    className={cn(
+                      "text-[13.5px] font-bold",
+                      isActive ? meta.color : "text-foreground",
+                    )}
+                  >
                     {meta.label}
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">{meta.desc}</div>
@@ -1053,4 +1202,3 @@ export function StatusBottomSheet({
     </div>
   );
 }
-

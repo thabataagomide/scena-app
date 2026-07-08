@@ -75,15 +75,25 @@ const PUBLIC_LISTS: List[] = [
 ];
 
 const MY_LISTS: List[] = [
-  { id: "sci-fi", title: "Sci-fi para maratonar", name: "Sci-fi para maratonar", count: 18, privacy: "Pública" },
-  { id: "comfort", title: "Comfort watches", name: "Comfort watches", count: 24, privacy: "Privada" },
+  {
+    id: "sci-fi",
+    title: "Sci-fi para maratonar",
+    name: "Sci-fi para maratonar",
+    count: 18,
+    privacy: "Pública",
+  },
+  {
+    id: "comfort",
+    title: "Comfort watches",
+    name: "Comfort watches",
+    count: 24,
+    privacy: "Privada",
+  },
   { id: "a24", title: "A24 essenciais", name: "A24 essenciais", count: 11, privacy: "Pública" },
 ];
 
 function resolveMediaList(items: typeof PROFILE.recentlyWatched): MediaTitle[] {
-  return items
-    .map((item) => mediaService.getMediaById(item.id))
-    .filter(Boolean) as MediaTitle[];
+  return items.map((item) => mediaService.getMediaById(item.id)).filter(Boolean) as MediaTitle[];
 }
 
 export const userService = {

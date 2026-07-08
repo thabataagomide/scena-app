@@ -36,7 +36,10 @@ function PerfilPage() {
             {profile.name}
           </h1>
           <div className="mt-0.5 text-[13px] text-muted-foreground">
-            {profile.username} · <span>{profile.flag} {profile.country}</span>
+            {profile.username} ·{" "}
+            <span>
+              {profile.flag} {profile.country}
+            </span>
           </div>
           <p className="mt-3 max-w-[320px] text-[13.5px] leading-relaxed text-foreground/80">
             {profile.bio}
@@ -92,9 +95,7 @@ function PerfilPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-accent">
                 <Trophy className="h-4 w-4" strokeWidth={1.6} />
               </div>
-              <div className="text-center text-[12px] font-medium text-foreground">
-                {c}
-              </div>
+              <div className="text-center text-[12px] font-medium text-foreground">{c}</div>
             </div>
           ))}
         </div>
@@ -109,9 +110,7 @@ function FollowStat({ label, value }: { label: string; value: number }) {
       <div className="tracking-title text-[16px] font-semibold text-foreground">
         {value.toLocaleString("pt-BR")}
       </div>
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-        {label}
-      </div>
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
     </div>
   );
 }
@@ -146,4 +145,3 @@ function PosterRow({
     </div>
   );
 }
-

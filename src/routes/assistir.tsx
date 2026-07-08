@@ -1,6 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Check, Calendar, Bell, BellRing, Play, Share2, Sparkles, Clock, RefreshCw } from "lucide-react";
+import {
+  Check,
+  Calendar,
+  Bell,
+  BellRing,
+  Play,
+  Share2,
+  Sparkles,
+  Clock,
+  RefreshCw,
+} from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
 import { mediaService } from "@/services/media.service";
 import { seriesService } from "@/services/series.service";
@@ -38,11 +48,11 @@ function AssistirPage() {
 
   // Stateful states for the user cockpit
   const [watchingList, setWatchingList] = useState<ExtendedWatchingItem[]>(() =>
-    INITIAL_WATCHING.map((w) => ({ ...w, hasNewEpisode: false }))
+    INITIAL_WATCHING.map((w) => ({ ...w, hasNewEpisode: false })),
   );
   const [completedList, setCompletedList] = useState<ExtendedWatchingItem[]>([]);
   const [followedShows, setFollowedShows] = useState<string[]>(() =>
-    (profile.favoriteSeries ?? []).map((s) => s.id)
+    (profile.favoriteSeries ?? []).map((s) => s.id),
   );
   const [stats, setStats] = useState({
     episodesWatched: 243,
@@ -209,7 +219,7 @@ function AssistirPage() {
   // Filter and group upcoming releases based on followed shows list
   const filteredUpcoming = (group: "today" | "tomorrow" | "week") => {
     return UPCOMING_RELEASES.filter(
-      (up) => up.group === group && followedShows.includes(up.titleId)
+      (up) => up.group === group && followedShows.includes(up.titleId),
     );
   };
 
@@ -276,10 +286,7 @@ function AssistirPage() {
 
       {/* SECTION 2: Resume Watching [Reserved Layout] */}
       <section className="mb-10">
-        <SectionTitle
-          eyebrow="Continuar reprodução"
-          title="Onde você pausou"
-        />
+        <SectionTitle eyebrow="Continuar reprodução" title="Onde você pausou" />
         <div className="relative h-[156px] overflow-hidden rounded-3xl border border-border group cursor-pointer">
           {/* Backdrop screenshot background */}
           <img
@@ -322,10 +329,7 @@ function AssistirPage() {
 
       {/* SECTION 3: Continue Watching */}
       <section className="mb-10">
-        <SectionTitle
-          eyebrow="Sua jornada"
-          title="Em andamento"
-        />
+        <SectionTitle eyebrow="Sua jornada" title="Em andamento" />
         {watchingList.length > 0 ? (
           <div className="space-y-4">
             {watchingList.map((w) => (
@@ -337,7 +341,8 @@ function AssistirPage() {
             <Sparkles className="mx-auto h-5 w-5 text-accent/80 mb-2" />
             <div className="text-[13.5px] font-medium text-foreground">Você está em dia! ✨</div>
             <p className="text-[11.5px] text-muted-foreground mt-1 max-w-[280px] mx-auto leading-relaxed">
-              Todas as suas séries em andamento foram assistidas. Novos episódios aparecerão aqui automaticamente.
+              Todas as suas séries em andamento foram assistidas. Novos episódios aparecerão aqui
+              automaticamente.
             </p>
           </div>
         )}
@@ -346,10 +351,7 @@ function AssistirPage() {
       {/* SECTION 4: Upcoming Episodes (Followed Shows Only) */}
       <section className="mb-10">
         <div className="flex items-end justify-between mb-4">
-          <SectionTitle
-            eyebrow="Lançamentos em breve"
-            title="Próximos episódios"
-          />
+          <SectionTitle eyebrow="Lançamentos em breve" title="Próximos episódios" />
         </div>
 
         {/* Tactile Following Manager */}
@@ -368,7 +370,7 @@ function AssistirPage() {
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-semibold transition-all duration-300 active:scale-95 shrink-0 cursor-pointer",
                     isFollowed
                       ? "bg-accent/10 border-accent/30 text-accent"
-                      : "bg-surface border-border text-muted-foreground hover:text-foreground"
+                      : "bg-surface border-border text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <span className="text-[12px]">{isFollowed ? "✓" : "+"}</span>
@@ -437,10 +439,7 @@ function AssistirPage() {
 
       {/* SECTION 5: Recently Released */}
       <section className="mb-10">
-        <SectionTitle
-          eyebrow="Recém-lançados"
-          title="Lançados recentemente"
-        />
+        <SectionTitle eyebrow="Recém-lançados" title="Lançados recentemente" />
         <div className="-mx-5 flex gap-4.5 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-3">
           {RECENTLY_RELEASED.map((rr) => {
             const titleInfo = mediaService.getMediaById(rr.titleId);
@@ -500,10 +499,7 @@ function AssistirPage() {
       {/* SECTION 6: Up to Date Collapsible Section */}
       {completedList.length > 0 && (
         <section className="mb-10 animate-fade-in">
-          <SectionTitle
-            eyebrow="Tudo assistido"
-            title="Séries em dia"
-          />
+          <SectionTitle eyebrow="Tudo assistido" title="Séries em dia" />
           <div className="space-y-3">
             {completedList.map((c) => (
               <div
@@ -551,7 +547,9 @@ function AssistirPage() {
           </summary>
           <div className="mt-4 space-y-3 pt-3 border-t border-border">
             <p className="text-[11.5px] text-muted-foreground leading-relaxed">
-              Use estes controles rápidos para testar e validar os fluxos de trabalho do aplicativo (como conclusão automática de série e reintegração automática quando há novos lançamentos).
+              Use estes controles rápidos para testar e validar os fluxos de trabalho do aplicativo
+              (como conclusão automática de série e reintegração automática quando há novos
+              lançamentos).
             </p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -617,7 +615,7 @@ function WatchingCard({ item, onMarkWatched }: WatchingCardProps) {
     <article
       className={cn(
         "group relative flex gap-5 rounded-[28px] border border-border bg-card overflow-hidden p-5 transition-all duration-500 hover:border-accent/20",
-        item.hasNewEpisode && "border-accent/25 shadow-[0_0_15px_rgba(216,190,132,0.06)]"
+        item.hasNewEpisode && "border-accent/25 shadow-[0_0_15px_rgba(216,190,132,0.06)]",
       )}
     >
       {/* Cinematic Backdrop Background Layer */}
@@ -711,5 +709,3 @@ function WatchingCard({ item, onMarkWatched }: WatchingCardProps) {
     </article>
   );
 }
-
-

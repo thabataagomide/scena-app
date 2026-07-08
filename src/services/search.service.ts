@@ -1,6 +1,8 @@
 import { mediaService } from "./media.service";
 import { movieService } from "./movie.service";
 import { userService } from "./user.service";
+import { tmdbClient } from "./tmdb/tmdb.api";
+import { mapTmdbSearchResultsToMedia } from "./tmdb/tmdb.mapper";
 import type { List, MediaTitle, User, WatchStatus } from "./models";
 
 export const SEARCH_FILTERS = [
@@ -78,12 +80,8 @@ export const searchService = {
     const mediaMatches = mediaService.getAllMedia().filter((media) => matchesMedia(media, query));
 
     return {
-      series: mediaMatches
-        .filter((media) => media.kind === "series")
-        .map(withSearchMeta),
-      movie: mediaMatches
-        .filter((media) => media.kind === "movie")
-        .map(withSearchMeta),
+      series: mediaMatches.filter((media) => media.kind === "series").map(withSearchMeta),
+      movie: mediaMatches.filter((media) => media.kind === "movie").map(withSearchMeta),
       users: userService
         .getPublicUsers()
         .filter((user) => matchesUser(user, query))
@@ -110,6 +108,41 @@ export const searchService = {
       users: userService
         .getPublicUsers()
         .map((user) => ({ ...user, following: Boolean(user.following) })),
+    };
+  },
+
+  // ── Async variants (TMDb when VITE_TMDB_API_KEY is set) ────────────────────
+
+  async searchAsync(rawQuery: string): Promise<SearchResultGroups> {
+    const mock = this.search(rawQuery);
+    const q = rawQuery.trim();
+    if (!q || !tmdbClient.hasKey()) return mock;
+
+    const [tv, movies] = await Promise.all([tmdbClient.searchTv(q), tmdbClient.searchMovies(q)]);
+    const mapped = mapTmdbSearchResultsToMedia(tv?.results, movies?.results);
+
+    return {
+      series: mapped.series.map((m) => withSearchMeta(m)),
+      movie: mapped.movies.map((m) => withSearchMeta(m)),
+      users: mock.users,
+      lists: mock.lists,
+    };
+  },
+
+  async getTrendingAsync() {
+    const mock = this.getTrending();
+    if (!tmdbClient.hasKey()) return mock;
+
+    const [tv, movies] = await Promise.all([tmdbClient.trendingTv(), tmdbClient.trendingMovies()]);
+    const mapped = mapTmdbSearchResultsToMedia(
+      tv?.results?.slice(0, 12),
+      movies?.results?.slice(0, 12),
+    );
+    return {
+      series: mapped.series.map(withSearchMeta),
+      movies: mapped.movies.map(withSearchMeta),
+      lists: mock.lists,
+      users: mock.users,
     };
   },
 };

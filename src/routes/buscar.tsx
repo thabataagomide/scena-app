@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Clock, Search as SearchIcon, TrendingUp, X } from "lucide-react";
 import { AppShell, SectionTitle } from "@/components/scena/AppShell";
 import { MediaCard, titleToMedia } from "@/components/scena/MediaCard";
@@ -65,8 +65,16 @@ function BuscarPage() {
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length > 0;
 
-  const groupedResults = useMemo(() => {
-    return searchService.search(trimmedQuery);
+  const [groupedResults, setGroupedResults] = useState(() => searchService.search(""));
+
+  useEffect(() => {
+    let cancelled = false;
+    searchService.searchAsync(trimmedQuery).then((res) => {
+      if (!cancelled) setGroupedResults(res);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [trimmedQuery]);
 
   const visibleSections = getVisibleSections(filter, groupedResults);
@@ -189,7 +197,16 @@ function DiscoveryHome({
   onRemoveSearch: (value: string) => void;
   onClearSearches: () => void;
 }) {
-  const trending = searchService.getTrending();
+  const [trending, setTrending] = useState(() => searchService.getTrending());
+  useEffect(() => {
+    let cancelled = false;
+    searchService.getTrendingAsync().then((res) => {
+      if (!cancelled) setTrending(res);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="space-y-10">
@@ -282,7 +299,9 @@ function ResultSection({
       <div className="space-y-3">
         {visibleItems.map((item) => {
           if (sectionKey === "series" || sectionKey === "movie") {
-            return <MediaResult key={(item as SearchMediaResult).id} title={item as SearchMediaResult} />;
+            return (
+              <MediaResult key={(item as SearchMediaResult).id} title={item as SearchMediaResult} />
+            );
           }
           if (sectionKey === "users")
             return <UserCard key={(item as SearchUserResult).id} user={item as SearchUserResult} />;
