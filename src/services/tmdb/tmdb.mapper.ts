@@ -11,7 +11,7 @@ import type {
   SeriesDetails,
   StreamingPlatform,
 } from "../models";
-import { tmdbBackdrop, tmdbPoster, tmdbProfile, TMDB_IMAGE_BASE } from "./tmdb.client";
+import { tmdbBackdrop, tmdbPoster, tmdbProfile, TMDB_IMAGE_BASE } from "./tmdb.api";
 import type {
   TmdbCastMember,
   TmdbCredits,
