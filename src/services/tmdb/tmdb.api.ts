@@ -16,6 +16,18 @@ import type {
 const TMDB_BASE = "https://api.themoviedb.org/3";
 export const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/";
 
+function logTmdb(message: string, data?: Record<string, unknown>) {
+  if (import.meta.env.DEV) {
+    console.info(`[TMDb] ${message}`, data ?? {});
+  }
+}
+
+function warnTmdb(message: string, data?: Record<string, unknown>) {
+  if (import.meta.env.DEV) {
+    console.warn(`[TMDb] ${message}`, data ?? {});
+  }
+}
+
 export function tmdbApiKey(): string | undefined {
   const key = (import.meta.env.VITE_TMDB_API_KEY as string | undefined)?.trim();
   return key ? key : undefined;
@@ -42,7 +54,10 @@ async function tmdbRequest<T>(
   params: Record<string, string | number | undefined> = {},
 ): Promise<T | undefined> {
   const key = tmdbApiKey();
-  if (!key) return undefined;
+  if (!key) {
+    warnTmdb("request skipped: missing VITE_TMDB_API_KEY", { path });
+    return undefined;
+  }
 
   const url = new URL(`${TMDB_BASE}${path}`);
   url.searchParams.set("api_key", key);
@@ -52,10 +67,18 @@ async function tmdbRequest<T>(
   }
 
   try {
+    logTmdb("request called", { path, params: Object.keys(params) });
     const res = await fetch(url.toString());
-    if (!res.ok) return undefined;
+    if (!res.ok) {
+      warnTmdb("request failed", { path, status: res.status, statusText: res.statusText });
+      return undefined;
+    }
     return (await res.json()) as T;
-  } catch {
+  } catch (error) {
+    warnTmdb("request errored", {
+      path,
+      reason: error instanceof Error ? error.message : "Unknown error",
+    });
     return undefined;
   }
 }

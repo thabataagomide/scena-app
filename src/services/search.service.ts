@@ -74,6 +74,18 @@ function matchesList(list: List, query: string) {
   );
 }
 
+function logSearch(message: string, data?: Record<string, unknown>) {
+  if (import.meta.env.DEV) {
+    console.info(`[SearchService] ${message}`, data ?? {});
+  }
+}
+
+function warnSearch(message: string, data?: Record<string, unknown>) {
+  if (import.meta.env.DEV) {
+    console.warn(`[SearchService] ${message}`, data ?? {});
+  }
+}
+
 export const searchService = {
   search(rawQuery: string): SearchResultGroups {
     const query = normalize(rawQuery.trim());
@@ -116,40 +128,99 @@ export const searchService = {
   async searchAsync(rawQuery: string): Promise<SearchResultGroups> {
     const mock = this.search(rawQuery);
     const q = rawQuery.trim();
-    if (!q || !tmdbClient.hasKey()) return mock;
+    const hasKey = tmdbClient.hasKey();
+
+    logSearch("search requested", { query: q, hasApiKey: hasKey });
+
+    if (!q) {
+      logSearch("using mock fallback: empty query");
+      return mock;
+    }
+
+    if (!hasKey) {
+      warnSearch("using mock fallback: missing VITE_TMDB_API_KEY", { query: q });
+      return mock;
+    }
 
     try {
+      logSearch("calling TMDb search endpoints", { query: q, endpoints: ["search/tv", "search/movie"] });
       const [tv, movies] = await Promise.all([tmdbClient.searchTv(q), tmdbClient.searchMovies(q)]);
       const mapped = mapTmdbSearchResultsToMedia(tv?.results, movies?.results);
+      const usingTvFallback = !tv;
+      const usingMovieFallback = !movies;
+
+      if (usingTvFallback || usingMovieFallback) {
+        warnSearch("using partial mock fallback for media search", {
+          query: q,
+          tvFallback: usingTvFallback,
+          movieFallback: usingMovieFallback,
+        });
+      }
+
+      logSearch("TMDb search completed", {
+        query: q,
+        tvResults: tv?.results?.length ?? 0,
+        movieResults: movies?.results?.length ?? 0,
+      });
 
       return {
-        series: tv ? mapped.series.map((m) => withSearchMeta(m)) : mock.series,
-        movie: movies ? mapped.movies.map((m) => withSearchMeta(m)) : mock.movie,
+        series: usingTvFallback ? mock.series : mapped.series.map((m) => withSearchMeta(m)),
+        movie: usingMovieFallback ? mock.movie : mapped.movies.map((m) => withSearchMeta(m)),
         users: mock.users,
         lists: mock.lists,
       };
-    } catch {
+    } catch (error) {
+      warnSearch("using mock fallback: TMDb search threw", {
+        query: q,
+        reason: error instanceof Error ? error.message : "Unknown error",
+      });
       return mock;
     }
   },
 
   async getTrendingAsync() {
     const mock = this.getTrending();
-    if (!tmdbClient.hasKey()) return mock;
+    const hasKey = tmdbClient.hasKey();
+
+    logSearch("trending requested", { hasApiKey: hasKey });
+
+    if (!hasKey) {
+      warnSearch("using mock fallback: missing VITE_TMDB_API_KEY for trending");
+      return mock;
+    }
 
     try {
+      logSearch("calling TMDb trending endpoints", { endpoints: ["trending/tv/week", "trending/movie/week"] });
       const [tv, movies] = await Promise.all([tmdbClient.trendingTv(), tmdbClient.trendingMovies()]);
       const mapped = mapTmdbSearchResultsToMedia(
         tv?.results?.slice(0, 12),
         movies?.results?.slice(0, 12),
       );
+      const usingTvFallback = !tv;
+      const usingMovieFallback = !movies;
+
+      if (usingTvFallback || usingMovieFallback) {
+        warnSearch("using partial mock fallback for trending", {
+          tvFallback: usingTvFallback,
+          movieFallback: usingMovieFallback,
+        });
+      }
+
+      logSearch("TMDb trending completed", {
+        tvResults: tv?.results?.length ?? 0,
+        movieResults: movies?.results?.length ?? 0,
+      });
+
       return {
-        series: tv ? mapped.series.map(withSearchMeta) : mock.series,
-        movies: movies ? mapped.movies.map(withSearchMeta) : mock.movies,
+        series: usingTvFallback ? mock.series : mapped.series.map(withSearchMeta),
+        movies: usingMovieFallback ? mock.movies : mapped.movies.map(withSearchMeta),
         lists: mock.lists,
         users: mock.users,
       };
-    } catch {
+    } catch (error) {
+      warnSearch("using mock fallback: TMDb trending threw", {
+        reason: error instanceof Error ? error.message : "Unknown error",
+      });
       return mock;
     }
   },
