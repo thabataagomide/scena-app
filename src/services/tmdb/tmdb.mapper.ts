@@ -14,6 +14,7 @@ import type {
 import { tmdbBackdrop, tmdbPoster, tmdbProfile, TMDB_IMAGE_BASE } from "./tmdb.client";
 import type {
   TmdbCastMember,
+  TmdbCredits,
   TmdbEpisode,
   TmdbSearchMovie,
   TmdbSearchTv,
