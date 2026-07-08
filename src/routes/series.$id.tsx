@@ -238,7 +238,7 @@ function SeriesDetailsPage() {
       <AppShell>
         {/* ── Back Navigation ── */}
         <button
-          onClick={() => navigate({ to: "..", from: "/series/$id" })}
+          onClick={() => navigate({ to: "/" })}
           className="mb-5 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer active:scale-95"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Voltar
