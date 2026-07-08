@@ -215,7 +215,7 @@ function SeriesDetailsPage() {
     e.preventDefault();
     if (!newCommentText.trim()) return;
     setCommentsList((prev) => [
-      { user: { name: PROFILE.name, avatar: PROFILE.avatar }, comment: newCommentText, time: "Agora mesmo", likes: 0, rating: userRating || undefined },
+      { user: { name: PROFILE.displayName, avatar: PROFILE.avatar }, comment: newCommentText, time: "Agora mesmo", likes: 0, rating: userRating || undefined },
       ...prev,
     ]);
     setNewCommentText("");
