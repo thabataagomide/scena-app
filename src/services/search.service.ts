@@ -114,4 +114,45 @@ export const searchService = {
         .map((user) => ({ ...user, following: Boolean(user.following) })),
     };
   },
+
+  // ── Async variants (TMDb when VITE_TMDB_API_KEY is set) ────────────────────
+
+  async searchAsync(rawQuery: string): Promise<SearchResultGroups> {
+    const mock = this.search(rawQuery);
+    const q = rawQuery.trim();
+    if (!q || !tmdbClient.hasKey()) return mock;
+
+    const [tv, movies] = await Promise.all([
+      tmdbClient.searchTv(q),
+      tmdbClient.searchMovies(q),
+    ]);
+    const mapped = mapTmdbSearchResultsToMedia(tv?.results, movies?.results);
+
+    return {
+      series: mapped.series.map((m) => withSearchMeta(m)),
+      movie: mapped.movies.map((m) => withSearchMeta(m)),
+      users: mock.users,
+      lists: mock.lists,
+    };
+  },
+
+  async getTrendingAsync() {
+    const mock = this.getTrending();
+    if (!tmdbClient.hasKey()) return mock;
+
+    const [tv, movies] = await Promise.all([
+      tmdbClient.trendingTv(),
+      tmdbClient.trendingMovies(),
+    ]);
+    const mapped = mapTmdbSearchResultsToMedia(
+      tv?.results?.slice(0, 12),
+      movies?.results?.slice(0, 12),
+    );
+    return {
+      series: mapped.series.map(withSearchMeta),
+      movies: mapped.movies.map(withSearchMeta),
+      lists: mock.lists,
+      users: mock.users,
+    };
+  },
 };
