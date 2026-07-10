@@ -136,6 +136,25 @@ export interface SeriesDetails {
   comments: Comment[];
 }
 
+export interface MovieDetails {
+  id: string;
+  originalTitle?: string;
+  tagline: string;
+  year: number;
+  runtime: string;
+  releaseDate?: string;
+  genres: string[];
+  ageRating: string;
+  averageRating: number;
+  ratingsCount: string;
+  originalLanguage?: string;
+  country?: string;
+  overview: string;
+  streamingPlatforms: StreamingPlatform[];
+  cast: Person[];
+  comments: Comment[];
+}
+
 export interface FeedItem {
   id: string;
   user: { name: string; avatar: string };

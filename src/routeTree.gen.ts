@@ -16,6 +16,7 @@ import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as AssistirRouteImport } from './routes/assistir'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SeriesIdRouteImport } from './routes/series.$id'
+import { Route as MoviesIdRouteImport } from './routes/movies.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -52,6 +53,11 @@ const SeriesIdRoute = SeriesIdRouteImport.update({
   path: '/series/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MoviesIdRoute = MoviesIdRouteImport.update({
+  id: '/movies/$id',
+  path: '/movies/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/buscar': typeof BuscarRoute
   '/perfil': typeof PerfilRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/movies/$id': typeof MoviesIdRoute
   '/series/$id': typeof SeriesIdRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/buscar': typeof BuscarRoute
   '/perfil': typeof PerfilRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/movies/$id': typeof MoviesIdRoute
   '/series/$id': typeof SeriesIdRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/buscar': typeof BuscarRoute
   '/perfil': typeof PerfilRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/movies/$id': typeof MoviesIdRoute
   '/series/$id': typeof SeriesIdRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/perfil'
     | '/sitemap.xml'
+    | '/movies/$id'
     | '/series/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/perfil'
     | '/sitemap.xml'
+    | '/movies/$id'
     | '/series/$id'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/buscar'
     | '/perfil'
     | '/sitemap.xml'
+    | '/movies/$id'
     | '/series/$id'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   BuscarRoute: typeof BuscarRoute
   PerfilRoute: typeof PerfilRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  MoviesIdRoute: typeof MoviesIdRoute
   SeriesIdRoute: typeof SeriesIdRoute
 }
 
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SeriesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/movies/$id': {
+      id: '/movies/$id'
+      path: '/movies/$id'
+      fullPath: '/movies/$id'
+      preLoaderRoute: typeof MoviesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuscarRoute: BuscarRoute,
   PerfilRoute: PerfilRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  MoviesIdRoute: MoviesIdRoute,
   SeriesIdRoute: SeriesIdRoute,
 }
 export const routeTree = rootRouteImport

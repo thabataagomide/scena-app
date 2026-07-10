@@ -5,6 +5,7 @@
 
 import type {
   TmdbCredits,
+  TmdbMovieDetails,
   TmdbPaged,
   TmdbSearchMovie,
   TmdbSearchTv,
@@ -128,5 +129,23 @@ export const tmdbClient = {
 
   tvWatchProviders(id: number | string) {
     return tmdbRequest<TmdbWatchProviders>(`/tv/${id}/watch/providers`);
+  },
+
+  movieDetails(id: number | string) {
+    return tmdbRequest<TmdbMovieDetails>(`/movie/${id}`, {
+      append_to_response: "release_dates",
+    });
+  },
+
+  movieCredits(id: number | string) {
+    return tmdbRequest<TmdbCredits>(`/movie/${id}/credits`);
+  },
+
+  movieRecommendations(id: number | string) {
+    return tmdbRequest<TmdbPaged<TmdbSearchMovie>>(`/movie/${id}/recommendations`);
+  },
+
+  movieWatchProviders(id: number | string) {
+    return tmdbRequest<TmdbWatchProviders>(`/movie/${id}/watch/providers`);
   },
 };

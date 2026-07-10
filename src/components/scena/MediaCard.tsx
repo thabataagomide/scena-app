@@ -426,8 +426,11 @@ export function MediaCard({
     );
   }
 
-  // Movie — no dedicated detail page yet, render as-is
-  return <div className="block">{cardContent}</div>;
+  return (
+    <Link to="/movies/$id" params={{ id: media.id }} className="block">
+      {cardContent}
+    </Link>
+  );
 }
 
 // ─── Status Dropdown ──────────────────────────────────────────────────────────

@@ -319,11 +319,10 @@ function MediaResult({ title }: { title: SearchMediaResult }) {
       orientation="horizontal"
       size="lg"
       status={title.status}
-      readonly={title.kind === "movie"}
-      callbacks={title.kind === "movie" ? { onOpen: () => undefined } : undefined}
     />
   );
 }
+
 
 function TrendingMedia({ title, items }: { title: string; items: SearchMediaResult[] }) {
   return (

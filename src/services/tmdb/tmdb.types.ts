@@ -57,6 +57,36 @@ export interface TmdbEpisode {
   still_path?: string | null;
 }
 
+export interface TmdbProductionCountry {
+  iso_3166_1: string;
+  name: string;
+}
+
+export interface TmdbMovieDetails {
+  id: number;
+  title: string;
+  original_title?: string;
+  overview?: string;
+  tagline?: string;
+  release_date?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  vote_average?: number;
+  vote_count?: number;
+  runtime?: number | null;
+  genres?: TmdbGenre[];
+  original_language?: string;
+  spoken_languages?: Array<{ iso_639_1: string; english_name?: string; name?: string }>;
+  production_countries?: TmdbProductionCountry[];
+  release_dates?: {
+    results: Array<{
+      iso_3166_1: string;
+      release_dates: Array<{ certification?: string; release_date?: string }>;
+    }>;
+  };
+}
+
+
 export interface TmdbTvDetails {
   id: number;
   name: string;
