@@ -181,6 +181,56 @@ export function mapTmdbToSeriesDetails({
   };
 }
 
+export interface TmdbMovieDetailsInput {
+  details: TmdbMovieDetails;
+  credits?: TmdbCredits;
+  providers?: TmdbWatchProviders;
+}
+
+function ageRatingFromMovie(details: TmdbMovieDetails): string {
+  const results = details.release_dates?.results ?? [];
+  const pick = (iso: string) =>
+    results
+      .find((r) => r.iso_3166_1 === iso)
+      ?.release_dates.map((r) => r.certification)
+      .find((c) => c && c.trim());
+  return (pick("BR") || pick("US") || "—").toString();
+}
+
+export function mapTmdbToMovieDetails({
+  details,
+  credits,
+  providers,
+}: TmdbMovieDetailsInput): MovieDetails {
+  const rating =
+    typeof details.vote_average === "number" ? Number(details.vote_average.toFixed(1)) : 0;
+  const communityRating = Number((rating / 2).toFixed(1));
+  const country =
+    details.production_countries?.[0]?.name ?? details.production_countries?.[0]?.iso_3166_1;
+
+  return {
+    id: `movie-${details.id}`,
+    originalTitle: details.original_title,
+    tagline: details.tagline || "",
+    year: yearFromDate(details.release_date),
+    runtime: details.runtime ? `${details.runtime} min` : "—",
+    releaseDate: details.release_date ?? undefined,
+    genres: (details.genres ?? []).map((g) => g.name),
+    ageRating: ageRatingFromMovie(details),
+    averageRating: communityRating,
+    ratingsCount:
+      typeof details.vote_count === "number"
+        ? new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(details.vote_count)
+        : "0",
+    originalLanguage: details.original_language?.toUpperCase(),
+    country,
+    overview: details.overview ?? "",
+    streamingPlatforms: mapWatchProviders(providers),
+    cast: mapTmdbCast(credits?.cast),
+    comments: [],
+  };
+}
+
 // Extract the numeric TMDb id from an id like "tv-123" or "movie-456". Returns
 // undefined for legacy mock ids (kept for backward compatibility).
 export function parseTmdbId(id: string): { kind: "tv" | "movie"; tmdbId: number } | undefined {
@@ -188,3 +238,4 @@ export function parseTmdbId(id: string): { kind: "tv" | "movie"; tmdbId: number 
   if (!m) return undefined;
   return { kind: m[1] as "tv" | "movie", tmdbId: Number(m[2]) };
 }
+
