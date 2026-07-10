@@ -17,6 +17,7 @@ import type {
   TmdbCastMember,
   TmdbCredits,
   TmdbEpisode,
+  TmdbMovieDetails,
   TmdbSearchMovie,
   TmdbSearchTv,
   TmdbSeasonDetails,
