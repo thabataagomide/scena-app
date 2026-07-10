@@ -76,13 +76,13 @@ function matchesList(list: List, query: string) {
 
 function logSearch(message: string, data?: Record<string, unknown>) {
   if (import.meta.env.DEV) {
-    console.info(`[SearchService] ${message}`, data ?? {});
+    console.info(message, data ?? {});
   }
 }
 
 function warnSearch(message: string, data?: Record<string, unknown>) {
   if (import.meta.env.DEV) {
-    console.warn(`[SearchService] ${message}`, data ?? {});
+    console.warn(message, data ?? {});
   }
 }
 
@@ -130,7 +130,7 @@ export const searchService = {
     const q = rawQuery.trim();
     const hasKey = tmdbClient.hasKey();
 
-    logSearch("search requested", { query: q, hasApiKey: hasKey });
+    logSearch(`TMDb key exists: ${hasKey}`);
 
     if (!q) {
       logSearch("using mock fallback: empty query");
@@ -143,21 +143,21 @@ export const searchService = {
     }
 
     try {
-      logSearch("calling TMDb search endpoints", { query: q, endpoints: ["search/tv", "search/movie"] });
+      logSearch(`Calling TMDb search for query: ${q}`);
       const [tv, movies] = await Promise.all([tmdbClient.searchTv(q), tmdbClient.searchMovies(q)]);
       const mapped = mapTmdbSearchResultsToMedia(tv?.results, movies?.results);
       const usingTvFallback = !tv;
       const usingMovieFallback = !movies;
 
       if (usingTvFallback || usingMovieFallback) {
-        warnSearch("using partial mock fallback for media search", {
+        warnSearch("TMDb search failed, using fallback", {
           query: q,
           tvFallback: usingTvFallback,
           movieFallback: usingMovieFallback,
         });
       }
 
-      logSearch("TMDb search completed", {
+      logSearch("TMDb search success", {
         query: q,
         tvResults: tv?.results?.length ?? 0,
         movieResults: movies?.results?.length ?? 0,
@@ -170,7 +170,7 @@ export const searchService = {
         lists: mock.lists,
       };
     } catch (error) {
-      warnSearch("using mock fallback: TMDb search threw", {
+      warnSearch("TMDb search failed, using fallback", {
         query: q,
         reason: error instanceof Error ? error.message : "Unknown error",
       });

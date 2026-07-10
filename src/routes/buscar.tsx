@@ -49,6 +49,8 @@ function BuscarPage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<SearchFilterKey>("all");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [groupedResults, setGroupedResults] = useState(() => searchService.search(""));
+  const [isSearching, setIsSearching] = useState(false);
   const [expanded, setExpanded] = useState<Record<SearchFilterKey, boolean>>({
     all: false,
     series: false,
@@ -65,13 +67,23 @@ function BuscarPage() {
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length > 0;
 
-  const [groupedResults, setGroupedResults] = useState(() => searchService.search(""));
-
   useEffect(() => {
     let cancelled = false;
+
+    if (!trimmedQuery) {
+      setGroupedResults(searchService.search(""));
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
     searchService.searchAsync(trimmedQuery).then((res) => {
-      if (!cancelled) setGroupedResults(res);
+      if (!cancelled) {
+        setGroupedResults(res);
+        setIsSearching(false);
+      }
     });
+
     return () => {
       cancelled = true;
     };
@@ -164,6 +176,8 @@ function BuscarPage() {
           onRemoveSearch={removeRecentSearch}
           onClearSearches={clearRecentSearches}
         />
+      ) : isSearching ? (
+        <SearchLoadingState />
       ) : totalResults > 0 ? (
         <div className="space-y-9">
           {visibleSections.map((section) => (
@@ -183,6 +197,26 @@ function BuscarPage() {
         <EmptyState onChooseSearch={chooseSearch} />
       )}
     </AppShell>
+  );
+}
+
+function SearchLoadingState() {
+  return (
+    <div className="space-y-3" aria-label="Buscando no TMDb">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={index}
+          className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3"
+        >
+          <div className="h-[74px] w-[58px] shrink-0 animate-pulse rounded-xl bg-white/10" />
+          <div className="min-w-0 flex-1 space-y-2.5">
+            <div className="h-3.5 w-3/4 animate-pulse rounded-full bg-white/10" />
+            <div className="h-3 w-1/2 animate-pulse rounded-full bg-white/8" />
+            <div className="h-3 w-2/3 animate-pulse rounded-full bg-white/8" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

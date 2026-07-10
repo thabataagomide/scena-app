@@ -39,10 +39,12 @@ import type {
   Comment as CommentData,
   Episode as EpisodeData,
   Person as CastMember,
+  Series,
   SeriesDetails,
   StreamingPlatform,
   WatchStatus,
 } from "@/services/models";
+import { libraryStore, type LibraryStatus, type TvLibraryStatus } from "@/services/library.store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -116,6 +118,22 @@ const STATUS_ORDER: WatchStatus[] = [
   "abandoned",
 ];
 
+function watchStatusFromLibrary(status?: LibraryStatus): WatchStatus | undefined {
+  if (!status) return undefined;
+  if (status === "completed" || status === "watched") return "finished";
+  if (status === "dropped") return "abandoned";
+  if (status === "want" || status === "watching" || status === "uptodate" || status === "paused") {
+    return status;
+  }
+  return undefined;
+}
+
+function libraryStatusFromWatch(status: WatchStatus): TvLibraryStatus {
+  if (status === "finished") return "completed";
+  if (status === "abandoned") return "dropped";
+  return status;
+}
+
 // ─── Mock Database ────────────────────────────────────────────────────────────
 
 function SeriesDetailsPage() {
@@ -148,11 +166,18 @@ function SeriesDetailsPage() {
 
   // ── State ──
   const [status, setStatus] = useState<WatchStatus>(() => {
+    const item = typeof window !== "undefined" ? libraryStore.get({ id, kind: "series" }) : undefined;
+    const savedStatus = watchStatusFromLibrary(item?.status);
+    if (savedStatus) return savedStatus;
     return seriesService.isWatching(id) ? "watching" : "want";
   });
   const [showStatusSheet, setShowStatusSheet] = useState(false);
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [userRating, setUserRating] = useState(0);
+  const [isFavorited, setIsFavorited] = useState(() =>
+    typeof window !== "undefined" ? Boolean(libraryStore.get({ id, kind: "series" })?.favorite) : false,
+  );
+  const [userRating, setUserRating] = useState(() =>
+    typeof window !== "undefined" ? (libraryStore.get({ id, kind: "series" })?.rating ?? 0) : 0,
+  );
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [commentsList, setCommentsList] = useState<CommentData[]>(() => details.comments);
   const [newCommentText, setNewCommentText] = useState("");
@@ -182,6 +207,25 @@ function SeriesDetailsPage() {
     [watchedEpisodes],
   );
   const progressPercent = Math.round((watchedCount / totalEpisodesCount) * 100);
+  const currentSeries = useMemo<Series | undefined>(() => {
+    if (!titleBase) return undefined;
+    return {
+      ...titleBase,
+      year: details.year ?? titleBase.year,
+      genres: details.genres ?? titleBase.genres,
+      seasonsCount: details.seasonsCount,
+      tmdbRating: details.averageRating ?? titleBase.tmdbRating,
+    };
+  }, [titleBase, details]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const item = libraryStore.get({ id, kind: "series" });
+    const savedStatus = watchStatusFromLibrary(item?.status);
+    setStatus(savedStatus ?? (seriesService.isWatching(id) ? "watching" : "want"));
+    setIsFavorited(Boolean(item?.favorite));
+    setUserRating(item?.rating ?? 0);
+  }, [id]);
 
   // Current episode (first unwatched)
   const currentEpisodeLabel = useMemo(() => {
@@ -205,6 +249,13 @@ function SeriesDetailsPage() {
   }, [showStatusSheet]);
 
   // ── Handlers ──
+  const persistStatus = (newStatus: WatchStatus) => {
+    if (currentSeries) {
+      libraryStore.setStatus(currentSeries, libraryStatusFromWatch(newStatus));
+    }
+    setStatus(newStatus);
+  };
+
   const toggleEpisodeWatched = (seasonNum: number, ep: EpisodeData) => {
     const key = `${seasonNum}-${ep.episodeNum}`;
     const wasWatched = !!watchedEpisodes[key];
@@ -218,26 +269,31 @@ function SeriesDetailsPage() {
         description: `T${seasonNum} · E${ep.episodeNum}: "${ep.title}"`,
       });
       if (newCount === totalEpisodesCount) {
-        setStatus("finished");
+        persistStatus("finished");
         toast.success("Série concluída! 🎉", {
           description: `Todos os ${totalEpisodesCount} episódios assistidos.`,
         });
       } else if (newCount === Object.values(details.episodes).flat().length) {
-        setStatus("uptodate");
+        persistStatus("uptodate");
         toast.success("Em dia! ✨", { description: "Você viu todos os episódios disponíveis." });
       } else if (status === "want") {
-        setStatus("watching");
+        persistStatus("watching");
       }
     } else {
       toast.info("Marcação removida", {
         description: `T${seasonNum} · E${ep.episodeNum}: "${ep.title}"`,
       });
-      if (newCount === 0) setStatus("want");
-      else if (status === "finished") setStatus("watching");
+      if (newCount === 0) persistStatus("want");
+      else if (status === "finished") persistStatus("watching");
     }
   };
 
   const handleStatusChange = (newStatus: WatchStatus) => {
+    if (currentSeries) {
+      const item = libraryStore.setStatus(currentSeries, libraryStatusFromWatch(newStatus));
+      setIsFavorited(item.favorite);
+      setUserRating(item.rating ?? 0);
+    }
     setStatus(newStatus);
     setShowStatusSheet(false);
 
@@ -259,11 +315,45 @@ function SeriesDetailsPage() {
   };
 
   const toggleFavorite = () => {
+    if (!currentSeries) return;
     const next = !isFavorited;
-    setIsFavorited(next);
+    const item = libraryStore.setFavorite(currentSeries, next);
+    const savedStatus = watchStatusFromLibrary(item.status);
+    if (savedStatus) setStatus(savedStatus);
+    setIsFavorited(item.favorite);
+    setUserRating(item.rating ?? 0);
     toast[next ? "success" : "info"](
       next ? `Favoritado: ${titleBase?.title}` : "Removido dos favoritos",
     );
+  };
+
+  const rateSeries = (rating: number) => {
+    if (!currentSeries) return;
+    const item = libraryStore.setRating(currentSeries, rating);
+    const savedStatus = watchStatusFromLibrary(item.status);
+    if (savedStatus) setStatus(savedStatus);
+    setIsFavorited(item.favorite);
+    setUserRating(item.rating ?? 0);
+    toast.success(`${rating} estrelas — obrigado pela avaliação!`);
+  };
+
+  const toggleLibraryMembership = () => {
+    if (!currentSeries) return;
+    const existing = libraryStore.get(currentSeries);
+    if (existing) {
+      libraryStore.remove(currentSeries);
+      setStatus(seriesService.isWatching(id) ? "watching" : "want");
+      setIsFavorited(false);
+      setUserRating(0);
+      toast.info("Removido da biblioteca", { description: currentSeries.title });
+      return;
+    }
+    const item = libraryStore.setStatus(currentSeries, libraryStatusFromWatch(status));
+    const savedStatus = watchStatusFromLibrary(item.status);
+    if (savedStatus) setStatus(savedStatus);
+    setIsFavorited(item.favorite);
+    setUserRating(item.rating ?? 0);
+    toast.success("Adicionado à sua biblioteca", { description: currentSeries.title });
   };
 
   const handleShare = () => {
@@ -493,10 +583,9 @@ function SeriesDetailsPage() {
             {/* Add to list */}
             <QuickAction
               icon={<Plus className="h-5 w-5" strokeWidth={1.6} />}
-              label="Na Lista"
-              onClick={() =>
-                toast.success("Adicionado à sua lista!", { description: titleBase?.title })
-              }
+              label={libraryStore.get({ id, kind: "series" }) ? "Remover" : "Na Lista"}
+              onClick={toggleLibraryMembership}
+              active={Boolean(libraryStore.get({ id, kind: "series" }))}
             />
 
             {/* Rate */}
@@ -505,10 +594,7 @@ function SeriesDetailsPage() {
                 {[1, 2, 3, 4, 5].map((s) => (
                   <button
                     key={s}
-                    onClick={() => {
-                      setUserRating(s);
-                      toast.success(`${s} estrelas — obrigado pela avaliação!`);
-                    }}
+                    onClick={() => rateSeries(s)}
                     className="cursor-pointer p-0.5"
                     aria-label={`Avaliar ${s} estrelas`}
                   >

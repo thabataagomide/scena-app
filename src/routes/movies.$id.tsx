@@ -23,7 +23,7 @@ import { AppShell, SectionTitle } from "@/components/scena/AppShell";
 import { MediaCardVerticalSm, titleToMedia } from "@/components/scena/MediaCard";
 import { CastCard, PlatformChip } from "@/routes/series.$id";
 import { movieService } from "@/services/movie.service";
-import { movieLibraryStore, type MovieLibraryStatus } from "@/services/library.store";
+import { libraryStore, type MovieLibraryStatus } from "@/services/library.store";
 import type { Movie, MovieDetails } from "@/services/models";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -79,13 +79,15 @@ function MovieDetailsPage() {
   const [attempt, setAttempt] = useState(0);
 
   const [status, setStatus] = useState<MovieLibraryStatus | undefined>(() =>
-    typeof window !== "undefined" ? movieLibraryStore.get(id)?.status : undefined,
+    typeof window !== "undefined"
+      ? (libraryStore.get({ id, kind: "movie" })?.status as MovieLibraryStatus | undefined)
+      : undefined,
   );
   const [favorited, setFavorited] = useState<boolean>(() =>
-    typeof window !== "undefined" ? Boolean(movieLibraryStore.get(id)?.favorited) : false,
+    typeof window !== "undefined" ? Boolean(libraryStore.get({ id, kind: "movie" })?.favorite) : false,
   );
   const [userRating, setUserRating] = useState<number>(() =>
-    typeof window !== "undefined" ? (movieLibraryStore.get(id)?.rating ?? 0) : 0,
+    typeof window !== "undefined" ? (libraryStore.get({ id, kind: "movie" })?.rating ?? 0) : 0,
   );
 
   useEffect(() => {
@@ -119,35 +121,79 @@ function MovieDetailsPage() {
   const posterSrc = base?.poster ?? base?.backdrop;
 
   const genres = useMemo(() => details?.genres ?? base?.genres ?? [], [details, base]);
+  const currentMovie = useMemo<Movie | undefined>(() => {
+    if (!base) return undefined;
+    return {
+      ...base,
+      genres,
+      tmdbRating: details?.averageRating ?? base.tmdbRating,
+    };
+  }, [base, details, genres]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const item = libraryStore.get({ id, kind: "movie" });
+    setStatus(item?.status as MovieLibraryStatus | undefined);
+    setFavorited(Boolean(item?.favorite));
+    setUserRating(item?.rating ?? 0);
+  }, [id]);
 
   // ── Handlers ──
   const toggleStatus = (next: MovieLibraryStatus) => {
+    if (!currentMovie) return;
     if (status === next) {
-      movieLibraryStore.clearStatus(id);
+      libraryStore.remove(currentMovie);
       setStatus(undefined);
+      setFavorited(false);
+      setUserRating(0);
       toast.info("Removido da biblioteca");
       return;
     }
-    movieLibraryStore.setStatus(id, next);
-    setStatus(next);
+    const item = libraryStore.setStatus(currentMovie, next);
+    setStatus(item.status as MovieLibraryStatus);
+    setFavorited(item.favorite);
+    setUserRating(item.rating ?? 0);
     toast.success(next === "want" ? "Adicionado a Quero assistir" : "Marcado como assistido", {
       description: base?.title,
     });
   };
 
   const toggleFavorite = () => {
+    if (!currentMovie) return;
     const nextVal = !favorited;
-    movieLibraryStore.setFavorite(id, nextVal);
-    setFavorited(nextVal);
+    const item = libraryStore.setFavorite(currentMovie, nextVal);
+    setStatus(item.status as MovieLibraryStatus);
+    setFavorited(item.favorite);
+    setUserRating(item.rating ?? 0);
     toast[nextVal ? "success" : "info"](
       nextVal ? `Favoritado: ${base?.title ?? "Filme"}` : "Removido dos favoritos",
     );
   };
 
   const rate = (n: number) => {
-    movieLibraryStore.setRating(id, n);
-    setUserRating(n);
+    if (!currentMovie) return;
+    const item = libraryStore.setRating(currentMovie, n);
+    setStatus(item.status as MovieLibraryStatus);
+    setFavorited(item.favorite);
+    setUserRating(item.rating ?? 0);
     toast.success(`${n} estrelas — obrigado pela avaliação!`);
+  };
+
+  const toggleLibraryMembership = () => {
+    if (!currentMovie) return;
+    if (status) {
+      libraryStore.remove(currentMovie);
+      setStatus(undefined);
+      setFavorited(false);
+      setUserRating(0);
+      toast.info("Removido da biblioteca", { description: currentMovie.title });
+      return;
+    }
+    const item = libraryStore.setStatus(currentMovie, "want");
+    setStatus(item.status as MovieLibraryStatus);
+    setFavorited(item.favorite);
+    setUserRating(item.rating ?? 0);
+    toast.success("Adicionado à sua biblioteca", { description: currentMovie.title });
   };
 
   const handleShare = () => {
@@ -337,8 +383,9 @@ function MovieDetailsPage() {
           />
           <QuickAction
             icon={<Plus className="h-5 w-5" strokeWidth={1.6} />}
-            label="Na Lista"
-            onClick={() => toast.success("Adicionado à sua lista!", { description: base?.title })}
+            label={status ? "Remover" : "Na Lista"}
+            onClick={toggleLibraryMembership}
+            active={Boolean(status)}
           />
 
           <div className="flex flex-col items-center gap-1.5">
