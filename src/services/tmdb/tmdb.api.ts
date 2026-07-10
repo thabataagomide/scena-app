@@ -5,6 +5,7 @@
 
 import type {
   TmdbCredits,
+  TmdbMovieDetails,
   TmdbPaged,
   TmdbSearchMovie,
   TmdbSearchTv,
