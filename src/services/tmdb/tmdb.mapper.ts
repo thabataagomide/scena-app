@@ -6,6 +6,7 @@ import type {
   Episode,
   MediaTitle,
   Movie,
+  MovieDetails,
   Person,
   Series,
   SeriesDetails,
